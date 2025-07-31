@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -37,7 +38,7 @@ function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.users}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(res.data);
@@ -48,7 +49,7 @@ function AdminDashboard() {
 
   const fetchSummary = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/summary", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.summary}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSummary(res.data);
@@ -59,7 +60,7 @@ function AdminDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/notifications", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.notifications.base}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(res.data);
@@ -154,11 +155,11 @@ function AdminDashboard() {
           <DatePicker selected={to} onChange={setTo} placeholderText="To date" className="border px-2 py-1 rounded" />
         </div>
         <div className="flex flex-wrap gap-3">
-          <a href={buildUrl("http://localhost:5000/api/export/inventory")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Inventory (CSV)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/inventory/pdf")} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Inventory (PDF)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/deliveries")} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Deliveries (CSV)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/orders")} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Orders (CSV)</a>
-          <a href="http://localhost:5000/api/export/warehouse-summary" className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Warehouse Summary (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.inventory}`)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Inventory (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.inventoryPdf}`)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Inventory (PDF)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.deliveries}`)} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Deliveries (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.orders}`)} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Orders (CSV)</a>
+          <a href={`${API_BASE_URL}${API_ENDPOINTS.export.warehouseSummary}`} className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Warehouse Summary (CSV)</a>
         </div>
       </div>
 
@@ -181,7 +182,7 @@ function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
             <button
               onClick={async () => {
-                await axios.put("http://localhost:5000/api/notifications/mark-read", {}, {
+                await axios.put(`${API_BASE_URL}${API_ENDPOINTS.notifications.markRead}`, {}, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 setShowNotifModal(false);

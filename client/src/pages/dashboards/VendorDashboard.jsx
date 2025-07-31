@@ -3,6 +3,7 @@ import axios from "axios";
 import Modal from "../../components/Modal";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -39,7 +40,7 @@ function VendorDashboard() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/orders", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.orders}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrders(res.data);
@@ -50,7 +51,7 @@ function VendorDashboard() {
 
   const fetchInventory = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.inventory.base}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInventory(res.data);
@@ -61,7 +62,7 @@ function VendorDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/notifications", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.notifications.base}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(res.data);
@@ -86,7 +87,7 @@ function VendorDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/orders", form, {
+      await axios.post(`${API_BASE_URL}${API_ENDPOINTS.orders}`, form, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShowOrderModal(false);
@@ -168,7 +169,7 @@ function VendorDashboard() {
             className="border px-2 py-1 rounded"
           />
           <a
-            href={buildUrl("http://localhost:5000/api/export/orders")}
+            href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.orders}`)}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
           >
             Export Orders CSV
@@ -257,7 +258,7 @@ function VendorDashboard() {
             <h2 className="text-xl font-semibold text-yellow-800">Notifications</h2>
             <button
               onClick={async () => {
-                await axios.put("http://localhost:5000/api/notifications/mark-read", {}, {
+                await axios.put(`${API_BASE_URL}${API_ENDPOINTS.notifications.markRead}`, {}, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 setShowNotifModal(false);

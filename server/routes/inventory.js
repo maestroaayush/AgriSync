@@ -87,7 +87,7 @@ router.delete('/:id', protect, async (req, res) => {
   if (!item) return res.status(404).json({ message: 'Item not found' });
   if (item.user.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' });
 
-  await item.remove();
+  await Inventory.deleteOne({ _id: req.params.id });
   res.json({ message: 'Item deleted' });
 });
 
@@ -139,14 +139,35 @@ router.get('/analytics/items-per-location', protect, async (req, res) => {
   res.json(breakdown);
 });
 
-// Logs of recent inventory additions
+// Logs of recent inventory additions with pagination
 router.get('/logs/recent', protect, async (req, res) => {
-  const logs = await Inventory.find({ addedByRole: 'warehouse_manager' })
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .select('itemName quantity location createdAt');
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-  res.json(logs);
+    const logs = await Inventory.find({ addedByRole: 'warehouse_manager' })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select('itemName quantity location createdAt');
+
+    const total = await Inventory.countDocuments({ addedByRole: 'warehouse_manager' });
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      logs,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch logs', error: error.message });
+  }
 });
 
 // Public view of inventory for vendors (only active items with quantity > 0)

@@ -6,8 +6,9 @@ import AddInventoryModal from "../../components/AddInventoryModal";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 
-function WarehouseDashboard() {
+function FarmerDashboard() {
   const [inventory, setInventory] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [warehouse, setWarehouse] = useState(null);
@@ -37,7 +38,7 @@ function WarehouseDashboard() {
 
   const fetchLogs = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/logs/recent", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.inventory.logs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLogs(res.data);
@@ -47,11 +48,11 @@ function WarehouseDashboard() {
   };
 
   useEffect(() => {
-    document.title = "Warehouse Dashboard – AgriSync";
+    document.title = "Farmer Dashboard – AgriSync";
 
-    // Redirect if role is not warehouse_manager
-    if (user?.role !== "warehouse_manager") {
-      window.location.href = `/${user?.role || "login"}/dashboard`;
+    // Redirect if role is not farmer
+    if (user?.role !== "farmer") {
+      navigate(`/${user?.role || "login"}/dashboard`);
       return;
     }
 
@@ -63,7 +64,7 @@ function WarehouseDashboard() {
 
   const fetchInventory = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/inventory/location/${user.location}`, {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.inventory.location(user.location)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInventory(res.data);
@@ -74,7 +75,7 @@ function WarehouseDashboard() {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/deliveries", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.deliveries}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const incoming = res.data.filter((d) => d.dropoffLocation === user.location);
@@ -86,7 +87,7 @@ function WarehouseDashboard() {
 
   const fetchWarehouseInfo = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/warehouses", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.warehouses}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const match = res.data.find((w) => w.location === user.location);
@@ -99,13 +100,13 @@ function WarehouseDashboard() {
   const confirmDelivery = async (delivery) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/deliveries/${delivery._id}/status`,
+        `${API_BASE_URL}${API_ENDPOINTS.deliveries}/${delivery._id}/status`,
         { status: "delivered" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       await axios.post(
-        `http://localhost:5000/api/inventory`,
+        `${API_BASE_URL}${API_ENDPOINTS.inventory.base}`,
         {
           itemName: delivery.goodsDescription,
           quantity: delivery.quantity,
@@ -132,4 +133,4 @@ function WarehouseDashboard() {
   );
 }
 
-export default WarehouseDashboard;
+export default FarmerDashboard;

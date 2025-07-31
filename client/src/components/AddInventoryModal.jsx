@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 function AddInventoryModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -17,7 +18,7 @@ function AddInventoryModal({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/inventory", form, {
+      await axios.post(`${API_BASE_URL}${API_ENDPOINTS.inventory.base}`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       onSuccess(); // refresh parent
@@ -56,7 +57,7 @@ function AddInventoryModal({ onClose, onSuccess }) {
       >
         <option value="kg">kg</option>
         <option value="liters">liters</option>
-        <option value="units">units</option>
+        <option value="pieces">pieces</option>
       </select>
       <input
         type="text"

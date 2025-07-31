@@ -21,6 +21,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['farmer', 'transporter', 'warehouse_manager', 'market_vendor', 'admin'],
     default: 'farmer'
   },
+  location: {
+    type: String,
+    default: 'Default Location'
+  },
 }, {
   timestamps: true
 });

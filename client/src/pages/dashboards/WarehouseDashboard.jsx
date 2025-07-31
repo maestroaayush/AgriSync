@@ -6,6 +6,7 @@ import AddInventoryModal from "../../components/AddInventoryModal";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 
 function WarehouseDashboard() {
   const [inventory, setInventory] = useState([]);
@@ -37,10 +38,10 @@ function WarehouseDashboard() {
 
   const fetchLogs = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/logs/recent", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.inventory.logs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setLogs(res.data);
+      setLogs(res.data.logs || []);
     } catch (err) {
       console.error("Log fetch failed", err);
     }
@@ -64,7 +65,7 @@ function WarehouseDashboard() {
 
   const fetchInventory = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/inventory/location/${user.location}`, {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.inventory.location(user.location)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInventory(res.data);
@@ -75,7 +76,7 @@ function WarehouseDashboard() {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/deliveries", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.deliveries}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const incoming = res.data.filter((d) => d.dropoffLocation === user.location);
@@ -87,7 +88,7 @@ function WarehouseDashboard() {
 
   const fetchWarehouseInfo = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/warehouses", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.warehouses}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const match = res.data.find((w) => w.location === user.location);
@@ -100,17 +101,17 @@ function WarehouseDashboard() {
   const confirmDelivery = async (delivery) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/deliveries/${delivery._id}/status`,
+        `${API_BASE_URL}${API_ENDPOINTS.deliveries}/${delivery._id}/status`,
         { status: "delivered" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       await axios.post(
-        `http://localhost:5000/api/inventory`,
+        `${API_BASE_URL}${API_ENDPOINTS.inventory.base}`,
         {
           itemName: delivery.goodsDescription,
           quantity: delivery.quantity,
-          unit: "units",
+          unit: "pieces",
           location: delivery.dropoffLocation,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -166,11 +167,11 @@ function WarehouseDashboard() {
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
-          <a href={buildUrl("http://localhost:5000/api/export/inventory")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Inventory (CSV)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/inventory/pdf")} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Inventory (PDF)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/deliveries")} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Deliveries (CSV)</a>
-          <a href={buildUrl("http://localhost:5000/api/export/orders")} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Vendor Orders (CSV)</a>
-          <a href="http://localhost:5000/api/export/warehouse-summary" className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Warehouse Summary (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.inventory}`)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Inventory (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.inventoryPdf}`)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Inventory (PDF)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.deliveries}`)} className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">Deliveries (CSV)</a>
+          <a href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.orders}`)} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Vendor Orders (CSV)</a>
+          <a href={`${API_BASE_URL}${API_ENDPOINTS.export.warehouseSummary}`} className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Warehouse Summary (CSV)</a>
         </div>
       </div>
 
@@ -222,7 +223,7 @@ function WarehouseDashboard() {
         <h2 className="text-xl font-semibold mb-2">Recent Inventory Logs</h2>
         <ul className="space-y-1 text-sm text-gray-700">
           {logs.map((log) => (
-            <li key={log._id}>{log.itemName} – {log.quantity} {log.unit} at {log.location} on {new Date(log.createdAt).toLocaleString()}</li>
+            <li key={log._id}>{log.itemName} – {log.quantity} {log.unit || 'units'} at {log.location} on {new Date(log.createdAt).toLocaleString()}</li>
           ))}
         </ul>
       </div>

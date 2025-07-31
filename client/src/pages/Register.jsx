@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 function Register({ embed = false, onClose }) {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function Register({ embed = false, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/register", form);
+      await axios.post(`${API_BASE_URL}${API_ENDPOINTS.auth.register}`, form);
       if (embed && onClose) onClose(); // Close modal if embedded
       navigate("/login");
     } catch (err) {

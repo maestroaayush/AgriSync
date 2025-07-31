@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 function EditableInventoryRow({ item, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -16,7 +17,7 @@ function EditableInventoryRow({ item, onUpdate }) {
 
   const handleSave = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/inventory/${item._id}`, form, {
+      await axios.put(`${API_BASE_URL}${API_ENDPOINTS.inventory.base}/${item._id}`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsEditing(false);

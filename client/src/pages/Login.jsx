@@ -1,9 +1,12 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
 
 function Login({ embed = false, onClose }) {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
@@ -12,9 +15,10 @@ function Login({ embed = false, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", form);
+      const res = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.auth.login}`, form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      setUser(res.data.user); // Update AuthContext
       const role = res.data.user.role;
 
       if (embed && onClose) onClose(); // Close modal if in embedded mode

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 function RequestDeliveryModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -17,7 +18,7 @@ function RequestDeliveryModal({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/deliveries", form, {
+      await axios.post(`${API_BASE_URL}${API_ENDPOINTS.deliveries}`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       onSuccess();

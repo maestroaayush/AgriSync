@@ -3,18 +3,27 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { check, validationResult } = require('express-validator');
 const protect = require('../middleware/authMiddleware');
 
 // @route   POST /api/auth/register
-router.post('/register', async (req, res) => {
-  const { name, email, password, role } = req.body;
+router.post('/register', [
+  check('name', 'Name is required').not().isEmpty(),
+  check('email', 'Please include a valid email').isEmail(),
+  check('password', 'Password should be at least 6 characters').isLength({ min: 6 })
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const { name, email, password, role, location } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashedPassword, role });
+    const user = new User({ name, email, password: hashedPassword, role, location });
 
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
@@ -24,7 +33,14 @@ router.post('/register', async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', [
+  check('email', 'Please include a valid email').isEmail(),
+  check('password', 'Password is required').exists()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const { email, password } = req.body;
 
   try {
@@ -42,7 +58,8 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        location: user.location
       }
     });
   } catch (err) {

@@ -35,6 +35,12 @@ router.get('/', protect, async (req, res) => {
     return res.json(deliveries);
   }
 
+  // Warehouse managers see all deliveries (to manage incoming ones)
+  if (req.user.role === 'warehouse_manager') {
+    const deliveries = await Delivery.find();
+    return res.json(deliveries);
+  }
+
   res.status(403).json({ message: 'Access denied' });
 });
 

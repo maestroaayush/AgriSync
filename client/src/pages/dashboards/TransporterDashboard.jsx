@@ -6,6 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
 
 function TransporterDashboard() {
   const [deliveries, setDeliveries] = useState([]);
@@ -35,7 +36,7 @@ function TransporterDashboard() {
 
   const fetchDeliveries = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/deliveries", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.deliveries}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const assigned = res.data.filter((d) => d.transporter === user.id);
@@ -48,7 +49,7 @@ function TransporterDashboard() {
   const updateStatus = async (id, newStatus) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/deliveries/${id}/status`,
+        `${API_BASE_URL}${API_ENDPOINTS.deliveries}/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -60,7 +61,7 @@ function TransporterDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/notifications", {
+      const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.notifications.base}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications(res.data);
@@ -131,7 +132,7 @@ function TransporterDashboard() {
           <DatePicker selected={to} onChange={setTo} placeholderText="To date" className="border px-2 py-1 rounded" />
         </div>
         <a
-          href={buildUrl("http://localhost:5000/api/export/deliveries")}
+          href={buildUrl(`${API_BASE_URL}${API_ENDPOINTS.export.deliveries}`)}
           className="bg-sky-600 text-white px-4 py-2 rounded hover:bg-sky-700"
         >
           Export Deliveries (CSV)
@@ -209,7 +210,7 @@ function TransporterDashboard() {
             <h2 className="text-xl font-semibold text-sky-800">Notifications</h2>
             <button
               onClick={async () => {
-                await axios.put("http://localhost:5000/api/notifications/mark-read", {}, {
+                await axios.put(`${API_BASE_URL}${API_ENDPOINTS.notifications.markRead}`, {}, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 setShowNotifModal(false);
