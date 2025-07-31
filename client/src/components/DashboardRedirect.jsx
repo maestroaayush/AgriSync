@@ -7,12 +7,15 @@ function DashboardRedirect() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
+    console.log('User data:', user);
     if (!user || !user.role) {
+      console.warn('Redirecting to login: No user data');
       navigate("/login");
     } else {
+      console.info(`Navigating to ${user.role} dashboard`);
       navigate(`/${user.role}/dashboard`);
     }
-  }, []);
+  }, [navigate]);
 
   return null;
 }

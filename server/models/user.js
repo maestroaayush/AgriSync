@@ -21,6 +21,14 @@ const UserSchema = new mongoose.Schema({
     enum: ['farmer', 'transporter', 'warehouse_manager', 'market_vendor', 'admin'],
     default: 'farmer'
   },
+  location: {
+    type: String,
+    trim: true
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
 }, {
   timestamps: true
 });

@@ -3,6 +3,16 @@ const router = express.Router();
 const Warehouse = require('../models/Warehouse');
 const protect = require('../middleware/authMiddleware');
 
+// Get all warehouses
+router.get('/', protect, async (req, res) => {
+  try {
+    const warehouses = await Warehouse.find();
+    res.json(warehouses);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // Add or update warehouse capacity
 router.post('/set-capacity', protect, async (req, res) => {
   const { location, capacityLimit } = req.body;

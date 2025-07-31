@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PrivateRoute from './routes/PrivateRoute';
 import FarmerDashboard from './pages/dashboards/FarmerDashboard';
+import TestDashboard from './pages/dashboards/TestDashboard';
 import TransporterDashboard from './pages/dashboards/TransporterDashboard';
 import WarehouseDashboard from './pages/dashboards/WarehouseDashboard';
 import VendorDashboard from './pages/dashboards/VendorDashboard';

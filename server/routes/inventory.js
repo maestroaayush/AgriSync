@@ -139,14 +139,26 @@ router.get('/analytics/items-per-location', protect, async (req, res) => {
   res.json(breakdown);
 });
 
-// Logs of recent inventory additions
+// Logs of recent inventory additions (enhanced to include all activities)
 router.get('/logs/recent', protect, async (req, res) => {
-  const logs = await Inventory.find({ addedByRole: 'warehouse_manager' })
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .select('itemName quantity location createdAt');
-
-  res.json(logs);
+  try {
+    const logs = await Inventory.find({ user: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .select('itemName quantity location createdAt addedByRole')
+      .lean();
+    
+    // Add action type for better logging
+    const enhancedLogs = logs.map(log => ({
+      ...log,
+      action: `Added ${log.quantity} ${log.itemName} to ${log.location}`,
+      type: 'inventory_add'
+    }));
+    
+    res.json(enhancedLogs);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching logs', error: error.message });
+  }
 });
 
 // Public view of inventory for vendors (only active items with quantity > 0)
@@ -172,6 +184,140 @@ router.get('/logs/date-range', protect, async (req, res) => {
     .select('itemName quantity unit location createdAt');
 
   res.json(logs);
+});
+
+// Comprehensive analytics endpoint
+router.get('/analytics', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all inventory for this user
+    const inventory = await Inventory.find({ user: userId });
+    
+    // Calculate basic metrics
+    const totalItems = inventory.length;
+    const totalQuantity = inventory.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+    const averageQuantityPerItem = totalItems > 0 ? (totalQuantity / totalItems).toFixed(1) : 0;
+    
+    // Low stock items (less than 10)
+    const lowStockItems = inventory.filter(item => parseInt(item.quantity) < 10);
+    
+    // Inventory by location
+    const locationBreakdown = await Inventory.aggregate([
+      { $match: { user: req.user._id } },
+      { $group: {
+        _id: '$location',
+        totalQuantity: { $sum: '$quantity' },
+        itemCount: { $sum: 1 },
+        items: { $push: { itemName: '$itemName', quantity: '$quantity' } }
+      }}
+    ]);
+    
+    // Inventory trends (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const trendsData = await Inventory.aggregate([
+      { $match: { user: req.user._id, createdAt: { $gte: thirtyDaysAgo } } },
+      { $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        dailyAdditions: { $sum: '$quantity' },
+        itemsAdded: { $sum: 1 }
+      }},
+      { $sort: { '_id': 1 } }
+    ]);
+    
+    // Format trends data for charts
+    const inventoryTrends = trendsData.map(item => ({
+      date: item._id,
+      quantity: item.dailyAdditions,
+      items: item.itemsAdded
+    }));
+    
+    res.json({
+      summary: {
+        totalItems,
+        totalQuantity,
+        averageQuantityPerItem,
+        lowStockCount: lowStockItems.length
+      },
+      lowStockItems,
+      locationBreakdown,
+      inventoryTrends,
+      lastUpdated: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching analytics', error: error.message });
+  }
+});
+
+// Inventory trends over time
+router.get('/analytics/trends', protect, async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+    
+    const trends = await Inventory.aggregate([
+      { $match: { user: req.user._id, createdAt: { $gte: daysAgo } } },
+      { $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        totalQuantity: { $sum: '$quantity' },
+        itemsAdded: { $sum: 1 }
+      }},
+      { $sort: { '_id': 1 } }
+    ]);
+    
+    // Fill in missing dates with zero values
+    const result = [];
+    const currentDate = new Date(daysAgo);
+    const endDate = new Date();
+    
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const existingData = trends.find(t => t._id === dateStr);
+      
+      result.push({
+        name: dateStr,
+        value: existingData ? existingData.totalQuantity : 0,
+        items: existingData ? existingData.itemsAdded : 0
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching trends', error: error.message });
+  }
+});
+
+// Performance metrics
+router.get('/analytics/performance', protect, async (req, res) => {
+  try {
+    const inventory = await Inventory.find({ user: req.user.id });
+    const totalQuantity = inventory.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+    
+    // Get warehouse info for capacity calculation
+    const Warehouse = require('../models/Warehouse');
+    const warehouses = await Warehouse.find();
+    const totalCapacity = warehouses.reduce((sum, wh) => sum + (wh.capacityLimit || 0), 0);
+    const storageEfficiency = totalCapacity > 0 ? ((totalQuantity / totalCapacity) * 100).toFixed(1) : 0;
+    
+    // Calculate other metrics
+    const lowStockCount = inventory.filter(item => parseInt(item.quantity) < 10).length;
+    const lowStockPercentage = inventory.length > 0 ? ((lowStockCount / inventory.length) * 100).toFixed(1) : 0;
+    
+    res.json({
+      storageEfficiency: parseFloat(storageEfficiency),
+      totalItems: inventory.length,
+      totalQuantity,
+      lowStockPercentage: parseFloat(lowStockPercentage),
+      averageQuantityPerItem: inventory.length > 0 ? (totalQuantity / inventory.length).toFixed(1) : 0
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching performance metrics', error: error.message });
+  }
 });
 
 module.exports = router;

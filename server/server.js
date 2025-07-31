@@ -10,6 +10,8 @@ const outgoingRoutes = require('./routes/outgoing');
 const notificationRoutes = require('./routes/notifications');
 const orderRoutes = require('./routes/orders');
 const reportRoutes = require('./routes/reports');
+const farmerRoutes = require('./routes/farmer');
+const analyticsRoutes = require('./routes/analytics');
 
 
 dotenv.config();
@@ -29,6 +31,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/export', require('./routes/export'));
+app.use('/api/farmer', farmerRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Default route
 app.get('/', (req, res) => res.send('AgriSync API Running'));

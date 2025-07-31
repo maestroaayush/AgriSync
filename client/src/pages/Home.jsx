@@ -2,7 +2,28 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { 
+  ArrowRight, 
+  Wheat, 
+  Truck, 
+  BarChart3, 
+  Users, 
+  Shield, 
+  Zap, 
+  CheckCircle, 
+  Star,
+  TrendingUp,
+  Globe,
+  Smartphone,
+  Clock,
+  Award,
+  ChevronDown,
+  Play,
+  MessageCircle,
+  Mail,
+  Phone,
+  MapPin
+} from "lucide-react";
 import Modal from "../components/Modal";
 import Login from "./Login";
 import Register from "./Register";
@@ -79,6 +100,78 @@ const [activeTab, setActiveTab] = useState("login");
               </div>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-6 md:px-12 bg-white text-center">
+        <h2 className="text-3xl font-bold mb-12">Why Choose AgriSync?</h2>
+        <div className="grid gap-10 md:grid-cols-3">
+          {/* Feature Cards */}
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <Wheat className="h-12 w-12 mx-auto text-green-700" />
+            <h3 className="text-xl font-semibold mt-4">Advanced Crop Analytics</h3>
+            <p className="text-gray-600 mt-2">Utilize AI-driven analytics for optimal crop management and increased yield.</p>
+          </div>
+
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <Truck className="h-12 w-12 mx-auto text-green-700" />
+            <h3 className="text-xl font-semibold mt-4">Seamless Logistics</h3>
+            <p className="text-gray-600 mt-2">Optimize transportation and manage delivery schedules with precision.</p>
+          </div>
+
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <BarChart3 className="h-12 w-12 mx-auto text-green-700" />
+            <h3 className="text-xl font-semibold mt-4">Market Integration</h3>
+            <p className="text-gray-600 mt-2">Connect with markets to streamline operations and maximize profits.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Performance Section */}
+      <section className="py-20 px-6 md:px-12 bg-green-50 text-center">
+        <h2 className="text-3xl font-bold mb-12">Performance Highlights</h2>
+        <div className="grid gap-10 md:grid-cols-3">
+          {/* Performance Cards */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <CheckCircle className="h-12 w-12 mx-auto text-green-600" />
+            <h3 className="text-xl font-semibold mt-4">Efficiency</h3>
+            <p className="text-gray-600 mt-2">Achieve up to 30% increase in operational efficiency.</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <Star className="h-12 w-12 mx-auto text-green-600" />
+            <h3 className="text-xl font-semibold mt-4">User Satisfaction</h3>
+            <p className="text-gray-600 mt-2">Highest ratings for usability and customer support.</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <TrendingUp className="h-12 w-12 mx-auto text-green-600" />
+            <h3 className="text-xl font-semibold mt-4">Growth</h3>
+            <p className="text-gray-600 mt-2">Scalable solutions supporting growth and innovation.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 px-6 md:px-12 bg-white text-center">
+        <h2 className="text-3xl font-bold mb-12">What Our Users Say</h2>
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+          {/* Testimonial Cards */}
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <p className="text-gray-700">"AgriSync revolutionized our workflow, making operations faster and more reliable."</p>
+            <span className="text-sm text-green-700 font-semibold mt-4 block">- Jane Doe, Farm Owner</span>
+          </div>
+
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <p className="text-gray-700">"The simplicity and efficiency of AgriSync is unmatched in the market!"</p>
+            <span className="text-sm text-green-700 font-semibold mt-4 block">- John Smith, Supply Chain Manager</span>
+          </div>
+
+          <div className="bg-green-100 p-6 rounded-lg shadow-md">
+            <p className="text-gray-700">"A must-have tool for the modern agricultural business."</p>
+            <span className="text-sm text-green-700 font-semibold mt-4 block">- Emily Johnson, Market Coordinator</span>
+          </div>
         </div>
       </section>
 
