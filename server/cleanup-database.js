@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const { AuditLog } = require('./models/AuditLog');
-const { Delivery } = require('./models/Delivery');
+const AuditLog = require('./models/AuditLog');
+const Delivery = require('./models/Delivery');
 require('dotenv').config();
 
 async function cleanupDatabase() {
@@ -26,12 +26,12 @@ async function cleanupDatabase() {
     
     try {
       const auditResult = await AuditLog.deleteMany({
-        timestamp: { $lt: thirtyDaysAgo }
+        createdAt: { $lt: thirtyDaysAgo }
       });
       console.log(`✅ Deleted ${auditResult.deletedCount} old audit logs (older than 30 days)`);
       totalCleaned += auditResult.deletedCount;
     } catch (auditError) {
-      console.log('⚠️ Audit log cleanup failed (collection might not exist):', auditError.message);
+      console.log('⚠️ Audit log cleanup failed:', auditError.message);
     }
 
     // 2. Clean up old location tracking data in deliveries

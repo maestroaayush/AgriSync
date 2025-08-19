@@ -1,4 +1,5 @@
 const AuditLog = require('../models/AuditLog');
+const auditService = require('../services/auditService');
 
 // Middleware to automatically log HTTP requests
 const auditMiddleware = (options = {}) => {
@@ -29,13 +30,35 @@ const auditMiddleware = (options = {}) => {
         const duration = Date.now() - startTime;
         const finalStatusCode = statusCode || res.statusCode;
         
-        // Skip logging for certain routes or methods if specified
-        if (options.skipRoutes && options.skipRoutes.some(route => req.path.includes(route))) {
+                // Skip logging for health checks and static files
+        if (req.path.includes('/health') || 
+            req.path.includes('/favicon') || 
+            req.path.includes('/static') ||
+            req.path.includes('/api-docs') ||
+            req.path.includes('/css') ||
+            req.path.includes('/js') ||
+            req.path.includes('/images') ||
+            req.method === 'OPTIONS') {
           return;
         }
         
-        if (options.skipMethods && options.skipMethods.includes(req.method)) {
-          return;
+        // Skip logging for frequent polling endpoints
+        if (req.path.includes('/notifications') && req.method === 'GET') {
+          // Skip 95% of notification polling to prevent log explosion
+          if (Math.random() > 0.05) {
+            return;
+          }
+        }
+        
+        // Skip logging for frequent data fetching
+        if ((req.path.includes('/inventory') || 
+             req.path.includes('/deliveries') || 
+             req.path.includes('/analytics')) && 
+            req.method === 'GET') {
+          // Skip 80% of GET requests for data fetching
+          if (Math.random() > 0.2) {
+            return;
+          }
         }
         
         // Determine action based on HTTP method and route
@@ -74,30 +97,19 @@ const auditMiddleware = (options = {}) => {
           }
         };
         
-        // Log the action
-        try {
-          await AuditLog.logAction({
-            user,
-            action,
-            resource,
-            resourceId: extractResourceId(req),
-            details,
-            request: requestInfo,
-            result,
-            category,
-            severity,
-            tags: generateTags(req, action, result.success)
-          });
-        } catch (auditError) {
-          // Handle storage quota exceeded error gracefully
-          if (auditError.code === 8000 || auditError.message?.includes('space quota')) {
-            console.warn('⚠️ Audit log skipped - database storage quota exceeded');
-            console.warn('💡 Run cleanup-database.js to free up space');
-          } else {
-            console.error('❌ Audit logging failed:', auditError.message);
-          }
-          // Don't break the application if audit logging fails
-        }
+        // Log the action using intelligent audit service
+        await auditService.logAction({
+          user,
+          action,
+          resource,
+          resourceId: extractResourceId(req),
+          details,
+          request: requestInfo,
+          result,
+          category,
+          severity,
+          tags: generateTags(req, action, result.success)
+        });
         
       } catch (error) {
         console.error('Audit logging failed:', error);
@@ -273,7 +285,7 @@ function generateTags(req, action, success) {
 const auditLogger = {
   // Log authentication events
   logAuth: async (user, action, success, req, details = {}) => {
-    await AuditLog.logAction({
+    await auditService.logAction({
       user,
       action,
       resource: 'AUTH',
@@ -296,7 +308,7 @@ const auditLogger = {
   
   // Log user management events
   logUserManagement: async (user, action, targetUser, success, details = {}) => {
-    await AuditLog.logAction({
+    await auditService.logAction({
       user,
       action,
       resource: 'USER',
@@ -314,7 +326,7 @@ const auditLogger = {
   
   // Log system events
   logSystem: async (action, details = {}, severity = 'LOW') => {
-    await AuditLog.logAction({
+    await auditService.logAction({
       user: null,
       action,
       resource: 'SYSTEM',

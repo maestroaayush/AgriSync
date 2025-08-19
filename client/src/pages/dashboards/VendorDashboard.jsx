@@ -157,7 +157,9 @@ function VendorDashboard() {
     quantity: 1,
     urgency: 'normal',
     destination: '',
-    notes: ''
+    notes: '',
+    unit: 'units',
+    requestType: 'delivery' // 'order' for simple orders, 'delivery' for delivery requests
   });
   const [from, setFrom] = useState(null);
   const [to, setTo] = useState(null);
@@ -389,14 +391,50 @@ function VendorDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/orders", form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (form.requestType === 'delivery') {
+        // Create delivery request for admin to assign transporter
+        const deliveryData = {
+          itemName: form.itemName,
+          quantity: parseInt(form.quantity),
+          unit: form.unit,
+          urgency: form.urgency,
+          destination: form.destination || 'Any Available Warehouse',
+          notes: form.notes,
+          pickupLocation: user?.location || 'Market Location',
+          goodsDescription: form.itemName,
+          requestedBy: user?.id || user?._id,
+          requesterType: 'vendor' // Mark as vendor request
+        };
+        
+        await axios.post("http://localhost:5000/api/deliveries", deliveryData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        alert('Delivery request submitted successfully! Admin will review and assign a transporter.');
+      } else {
+        // Regular order
+        await axios.post("http://localhost:5000/api/orders", form, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert('Order placed successfully!');
+      }
+      
       setShowOrderModal(false);
-      setForm({ itemName: "", quantity: 1 });
+      setForm({ 
+        itemName: "", 
+        quantity: 1, 
+        urgency: 'normal',
+        destination: '',
+        notes: '',
+        unit: 'units',
+        requestType: 'delivery'
+      });
       fetchOrders();
+      fetchExpectedDeliveries(); // Refresh deliveries to show new request
     } catch (err) {
-      console.error("Failed to place order", err);
+      console.error("Failed to submit request", err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to submit request';
+      alert(`Request failed: ${errorMessage}`);
     }
   };
 
@@ -1582,37 +1620,157 @@ function VendorDashboard() {
 
       <Modal isOpen={showOrderModal} onClose={() => setShowOrderModal(false)}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-xl font-semibold">Place New Order</h2>
-          <select
-            name="itemName"
-            value={form.itemName}
-            onChange={(e) => setForm({ ...form, itemName: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-            required
-          >
-            <option value="" disabled>Select item</option>
-            {(inventory || []).filter(Boolean).filter(inv => inv && inv.itemName).map((inv) => (
-              <option key={inv._id || inv.itemName} value={inv.itemName}>
-                {inv.itemName}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="quantity"
-            value={form.quantity}
-            onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-            placeholder="Quantity"
-            className="w-full px-3 py-2 border rounded"
-            required
-            min={1}
-          />
+          <h2 className="text-xl font-semibold">Place New Order / Request Delivery</h2>
+          
+          {/* Request Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, requestType: 'delivery' })}
+                className={`p-3 border rounded-lg text-center transition-all ${
+                  form.requestType === 'delivery' 
+                    ? 'border-amber-500 bg-amber-50 text-amber-700' 
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                <Truck className="h-5 w-5 mx-auto mb-1" />
+                <div className="text-sm font-medium">Delivery Request</div>
+                <div className="text-xs text-gray-500">Admin assigns transporter</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, requestType: 'order' })}
+                className={`p-3 border rounded-lg text-center transition-all ${
+                  form.requestType === 'order' 
+                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                <ShoppingCart className="h-5 w-5 mx-auto mb-1" />
+                <div className="text-sm font-medium">Simple Order</div>
+                <div className="text-xs text-gray-500">Direct order placement</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Item Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+            <select
+              name="itemName"
+              value={form.itemName}
+              onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              required
+            >
+              <option value="" disabled>Select item</option>
+              {(inventory || []).filter(Boolean).filter(inv => inv && inv.itemName).map((inv) => (
+                <option key={inv._id || inv.itemName} value={inv.itemName}>
+                  {inv.itemName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quantity and Unit */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+              <input
+                type="number"
+                name="quantity"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                placeholder="Quantity"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                required
+                min={1}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+              <select
+                name="unit"
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              >
+                <option value="units">Units</option>
+                <option value="kg">Kilograms</option>
+                <option value="tons">Tons</option>
+                <option value="boxes">Boxes</option>
+                <option value="bags">Bags</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Delivery-specific fields */}
+          {form.requestType === 'delivery' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+                <select
+                  name="urgency"
+                  value={form.urgency}
+                  onChange={(e) => setForm({ ...form, urgency: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="low">Low Priority</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                <input
+                  type="text"
+                  name="destination"
+                  value={form.destination}
+                  onChange={(e) => setForm({ ...form, destination: e.target.value })}
+                  placeholder="Destination (optional - defaults to your market location)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                <textarea
+                  name="notes"
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Any special instructions or requirements..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700"
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-3 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all duration-200 font-medium flex items-center justify-center space-x-2"
           >
-            Submit Order
+            {form.requestType === 'delivery' ? (
+              <>
+                <Truck className="h-5 w-5" />
+                <span>Submit Delivery Request</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-5 w-5" />
+                <span>Place Order</span>
+              </>
+            )}
           </button>
+          
+          {form.requestType === 'delivery' && (
+            <div className="text-xs text-gray-500 text-center">
+              💡 Your delivery request will be reviewed by an admin who will assign an available transporter.
+            </div>
+          )}
         </form>
       </Modal>
 

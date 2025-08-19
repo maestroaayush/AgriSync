@@ -4,6 +4,22 @@ const deliverySchema = new mongoose.Schema({
   farmer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: false // No longer required since vendors can also create deliveries
+  },
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  // Universal fields for both farmers and vendors
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  requesterType: {
+    type: String,
+    enum: ['farmer', 'market_vendor'],
     required: true
   },
   pickupLocation: {
@@ -24,6 +40,10 @@ receivedByWarehouse: {
   default: false
 },
   quantity: Number,
+  unit: {
+    type: String,
+    default: 'units'
+  },
   status: {
     type: String,
     enum: ['pending', 'assigned', 'in_transit', 'delivered', 'requested', 'rejected'],

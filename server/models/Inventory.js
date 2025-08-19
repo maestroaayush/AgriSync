@@ -61,8 +61,18 @@ const inventorySchema = new mongoose.Schema({
   },
   addedByRole: {
     type: String,
-    enum: ['farmer', 'warehouse_manager'],
+    enum: ['farmer', 'warehouse_manager', 'system'],
     required: true
+  },
+  // Link to source delivery if auto-added
+  sourceDelivery: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Delivery'
+  },
+  // Additional notes for tracking
+  notes: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

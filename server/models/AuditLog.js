@@ -42,7 +42,7 @@ const AuditLogSchema = new mongoose.Schema({
       
       // System events
       'SYSTEM_STARTUP', 'SYSTEM_SHUTDOWN', 'DATABASE_BACKUP', 'DATABASE_RESTORE',
-      'ERROR_OCCURRED', 'SECURITY_ALERT'
+      'ERROR_OCCURRED', 'SECURITY_ALERT', 'SYSTEM_QUOTA_CHECK', 'SYSTEM_CLEANUP'
     ]
   },
   

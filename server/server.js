@@ -27,7 +27,9 @@ const transporterRoutes = require('./routes/transporters');
 const announcementRoutes = require('./routes/announcements');
 const auditRoutes = require('./routes/audit');
 const vendorRoutes = require('./routes/vendor');
+const adminRoutes = require('./routes/admin');
 const { auditMiddleware } = require('./middleware/auditMiddleware');
+const auditService = require('./services/auditService');
 const app = express();
 const server = http.createServer(app);
 
@@ -211,6 +213,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/vendor', vendorRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Direct routes for admin dashboard
 const protect = require('./middleware/authMiddleware');
@@ -315,6 +318,10 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI, mongoOptions);
     console.log('✅ MongoDB connected successfully');
+    
+    // Start audit service scheduled cleanup
+    auditService.startScheduledCleanup();
+    console.log('✅ Audit service initialized with automatic cleanup');
     
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

@@ -1660,7 +1660,7 @@ function AdminDashboard() {
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Farmer</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Requester</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Product Details</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Pickup Location</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Requested Date</th>
@@ -1674,10 +1674,23 @@ function AdminDashboard() {
                         <td className="py-3 px-4">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {delivery.farmer?.name || delivery.farmerName || 'Unknown Farmer'}
+                              {delivery.farmer?.name || delivery.vendor?.name || delivery.farmerName || 'Unknown Requester'}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {delivery.farmer?.email || delivery.farmerEmail || ''}
+                              {delivery.farmer?.email || delivery.vendor?.email || delivery.farmerEmail || ''}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {delivery.requesterType ? (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  delivery.requesterType === 'farmer' ? 'bg-green-100 text-green-700' :
+                                  delivery.requesterType === 'market_vendor' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {delivery.requesterType === 'market_vendor' ? '🏪 Vendor' : '🌾 Farmer'}
+                                </span>
+                              ) : (
+                                delivery.farmer ? '🌾 Farmer' : delivery.vendor ? '🏪 Vendor' : 'Unknown'
+                              )}
                             </div>
                           </div>
                         </td>

@@ -5,6 +5,8 @@ const User = require('../models/user');
 const protect = require('../middleware/authMiddleware');
 const Inventory = require('../models/Inventory');
 const NotificationService = require('../services/notificationService');
+const WarehouseService = require('../services/warehouseService');
+const OrderFulfillmentService = require('../services/orderFulfillmentService');
 // Farmers request transporter
 router.post('/request-transporter', protect, async (req, res) => {
   try {
@@ -50,56 +52,69 @@ router.post('/request-transporter', protect, async (req, res) => {
   }
 });
 
-// Add regular delivery creation route for farmers
+// Add regular delivery creation route for farmers and vendors
 router.post('/', protect, async (req, res) => {
   try {
     console.log('Creating delivery request:', req.body);
-    const { destination, itemName, quantity, urgency, notes } = req.body;
+    const { destination, itemName, quantity, urgency, notes, pickupLocation, goodsDescription, unit, requesterType } = req.body;
     
-    if (req.user.role !== 'farmer') {
-      return res.status(403).json({ message: 'Only farmers can request deliveries' });
+    if (req.user.role !== 'farmer' && req.user.role !== 'market_vendor') {
+      return res.status(403).json({ message: 'Only farmers and vendors can request deliveries' });
     }
 
-    // Get farmer's coordinates set by admin
-    const farmer = await User.findById(req.user.id);
+    // Get user's coordinates set by admin (works for both farmers and vendors)
+    const requester = await User.findById(req.user.id);
     
-    // Set pickup coordinates from farmer's admin-managed location
-    const pickupCoordinates = farmer.coordinates?.latitude && farmer.coordinates?.longitude ? {
-      latitude: farmer.coordinates.latitude,
-      longitude: farmer.coordinates.longitude
+    // Set pickup coordinates from user's admin-managed location
+    const pickupCoordinates = requester.coordinates?.latitude && requester.coordinates?.longitude ? {
+      latitude: requester.coordinates.latitude,
+      longitude: requester.coordinates.longitude
     } : null;
 
-    const delivery = new Delivery({
-      farmer: req.user.id,
-      pickupLocation: farmer.coordinates?.address || farmer.location || 'Farm Location',
+    // Create delivery object based on requester type
+    const deliveryData = {
+      pickupLocation: pickupLocation || requester.coordinates?.address || requester.location || (req.user.role === 'farmer' ? 'Farm Location' : 'Market Location'),
       dropoffLocation: destination,
-      goodsDescription: itemName,
+      goodsDescription: goodsDescription || itemName,
       quantity: parseInt(quantity),
       urgency: urgency || 'normal',
       status: 'pending',
-      pickupCoordinates: pickupCoordinates
-    });
+      pickupCoordinates: pickupCoordinates,
+      unit: unit || 'units',
+      requesterType: requesterType || req.user.role,
+      requestedBy: req.user.id
+    };
+
+    // Set the appropriate field based on user role
+    if (req.user.role === 'farmer') {
+      deliveryData.farmer = req.user.id;
+    } else if (req.user.role === 'market_vendor') {
+      deliveryData.vendor = req.user.id;
+    }
+
+    const delivery = new Delivery(deliveryData);
 
     await delivery.save();
     console.log('Delivery created successfully:', delivery);
 
-    // Create notification for farmer using NotificationService
+    // Create notification for requester using NotificationService
     await NotificationService.deliveryRequested(req.user.id, {
       id: delivery._id,
-      itemName: itemName,
+      itemName: goodsDescription || itemName,
       quantity: quantity,
-      unit: req.body.unit || 'units',
+      unit: unit || 'units',
       urgency: urgency
     });
 
     // Notify all admins about the new delivery request
     const admins = await User.find({ role: 'admin' }).select('_id');
     
+    const requesterLabel = req.user.role === 'farmer' ? 'farmer' : 'vendor';
     for (const admin of admins) {
       await NotificationService.general(
         admin._id,
         '📦 New Delivery Request',
-        `New delivery request from ${req.user.name}: ${itemName} (${quantity} units) - Priority: ${urgency}. Please review and assign a transporter.`,
+        `New delivery request from ${requesterLabel} ${req.user.name}: ${goodsDescription || itemName} (${quantity} ${unit || 'units'}) - Priority: ${urgency}. Please review and assign a transporter.`,
         'info'
       );
     }
@@ -117,19 +132,33 @@ router.post('/', protect, async (req, res) => {
 // Transporters view unassigned deliveries
 router.get('/', protect, async (req, res) => {
   if (req.user.role === 'transporter') {
-    // Return all deliveries assigned to this transporter + unassigned pending deliveries
+    // Return only active deliveries (excluding delivered ones)
     const deliveries = await Delivery.find({
       $or: [
-        { transporter: req.user.id }, // All deliveries assigned to this transporter
+        { 
+          transporter: req.user.id, 
+          status: { $nin: ['delivered', 'cancelled'] } // Exclude completed deliveries
+        },
         { status: 'pending', transporter: null } // Unassigned pending deliveries
       ]
-    });
+    }).populate('farmer vendor', 'name location').sort({ createdAt: -1 });
     return res.json(deliveries);
   }
 
   // Farmers see their own requests
   if (req.user.role === 'farmer') {
     const deliveries = await Delivery.find({ farmer: req.user.id });
+    return res.json(deliveries);
+  }
+
+  // Vendors see their own requests
+  if (req.user.role === 'market_vendor') {
+    const deliveries = await Delivery.find({ 
+      $or: [
+        { vendor: req.user.id },
+        { requestedBy: req.user.id, requesterType: 'market_vendor' }
+      ]
+    });
     return res.json(deliveries);
   }
 
@@ -245,53 +274,83 @@ router.put('/:id/status', protect, async (req, res) => {
     
     // If status is changed to 'delivered', automatically add to warehouse inventory
     if (status === 'delivered' && oldStatus !== 'delivered') {
-      console.log('🏭 Auto-adding delivery to warehouse inventory...');
+      console.log('🏭 Auto-adding delivery to warehouse inventory using smart warehouse service...');
       
       try {
-        const Inventory = require('../models/Inventory');
-        const Warehouse = require('../models/Warehouse');
+        // Set delivery as completed
+        delivery.actualDeliveryTime = new Date();
+        delivery.receivedByWarehouse = true;
+        delivery.warehouseReceivedAt = new Date();
         
-        // Find a warehouse manager for the dropoff location
-        const User = require('../models/User');
-        let warehouseManager = await User.findOne({ 
-          role: 'warehouse_manager', 
-          location: delivery.dropoffLocation 
-        });
+        // Use the new smart warehouse service to add inventory
+        const inventoryItem = await WarehouseService.addDeliveryToWarehouseInventory(
+          delivery, 
+          delivery.dropoffLocation,
+          req.user // transporter who delivered
+        );
         
-        // If no specific warehouse manager found, use any warehouse manager
-        if (!warehouseManager) {
-          warehouseManager = await User.findOne({ role: 'warehouse_manager' });
-        }
+        console.log('✅ Inventory item created using warehouse service:', inventoryItem._id);
         
+        // Notify warehouse manager about the incoming delivery
+        const warehouseManager = await WarehouseService.getWarehouseManager(delivery.dropoffLocation);
         if (warehouseManager) {
-          // Create inventory item for the delivered goods
-          const inventoryItem = new Inventory({
-            user: warehouseManager._id,
-            itemName: delivery.goodsDescription,
-            quantity: delivery.quantity,
-            unit: 'units', // Default unit, could be made configurable
-            location: delivery.dropoffLocation || warehouseManager.location,
-            addedByRole: 'system', // Indicate this was added automatically
-            notes: `Auto-added from delivery ${delivery._id} completed by transporter ${req.user.name}`,
-            sourceDelivery: delivery._id // Link back to the delivery
-          });
-          
-          await inventoryItem.save();
-          console.log('✅ Inventory item created automatically:', inventoryItem._id);
-          
-          // Mark delivery as received by warehouse
-          delivery.receivedByWarehouse = true;
-          delivery.warehouseReceivedAt = new Date();
-        } else {
-          console.log('⚠️ No warehouse manager found to add inventory');
+          await NotificationService.general(
+            warehouseManager._id,
+            '📦 New Delivery Received',
+            `Delivery of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered to ${delivery.dropoffLocation}. Added to inventory automatically.`,
+            'success'
+          );
         }
+        
+        // Notify admins about successful delivery completion
+        const admins = await User.find({ role: 'admin' }).select('_id');
+        for (const admin of admins) {
+          await NotificationService.general(
+            admin._id,
+            '✅ Delivery Completed',
+            `Delivery ${delivery._id} (${delivery.goodsDescription}) has been successfully delivered and added to inventory at ${delivery.dropoffLocation}.`,
+            'success'
+          );
+        }
+        
       } catch (inventoryError) {
-        console.error('❌ Failed to auto-add to inventory:', inventoryError);
-        // Don't fail the entire operation if inventory addition fails
+        console.error('❌ Failed to auto-add to inventory using warehouse service:', inventoryError);
+        
+        // Still mark as delivered but flag for manual inventory addition
+        delivery.actualDeliveryTime = new Date();
+        delivery.receivedByWarehouse = false; // Flag for manual processing
+        
+        // Create notification for admin about the failure
+        try {
+          const admins = await User.find({ role: 'admin' }).select('_id');
+          for (const admin of admins) {
+            await NotificationService.general(
+              admin._id,
+              '⚠️ Auto-Inventory Failed',
+              `Delivery ${delivery._id} (${delivery.goodsDescription}) delivered but failed to auto-add to inventory at ${delivery.dropoffLocation}. Manual intervention required.`,
+              'warning'
+            );
+          }
+        } catch (notifError) {
+          console.error('Failed to notify admins about inventory failure:', notifError);
+        }
       }
     }
     
     await delivery.save();
+
+    // Update order status if this delivery is linked to an order
+    try {
+      const Order = require('../models/Order');
+      const relatedOrder = await Order.findOne({ delivery: delivery._id });
+      if (relatedOrder) {
+        console.log('📦 Updating related order status:', relatedOrder._id);
+        await OrderFulfillmentService.updateOrderFromDeliveryStatus(relatedOrder._id, status);
+      }
+    } catch (orderUpdateError) {
+      console.error('❌ Failed to update order status:', orderUpdateError);
+      // Don't fail the delivery update if order update fails
+    }
 
     // Create notification and send email for status change using NotificationService
     const { sendDeliveryStatusUpdateEmail } = require('../utils/emailService');
@@ -731,6 +790,7 @@ router.get('/:id/route', protect, async (req, res) => {
 
     const delivery = await Delivery.findById(req.params.id)
       .populate('farmer', 'name email coordinates location')
+      .populate('vendor', 'name email coordinates location')
       .populate('warehouseLocation', 'name coordinates location address')
       .populate('transporter', 'name email coordinates location');
     
@@ -776,6 +836,10 @@ router.get('/:id/route', protect, async (req, res) => {
       } : 'none');
     }
 
+    // Determine requester (farmer or vendor)
+    const requester = delivery.farmer || delivery.vendor;
+    const requesterType = delivery.requesterType || (delivery.farmer ? 'farmer' : delivery.vendor ? 'market_vendor' : 'unknown');
+    
     // Prepare route information with enhanced coordinate fallbacks
     const routeInfo = {
       deliveryId: delivery._id,
@@ -783,19 +847,21 @@ router.get('/:id/route', protect, async (req, res) => {
       pickedUp: delivery.pickedUp,
       goodsDescription: delivery.goodsDescription,
       quantity: delivery.quantity,
+      requesterType: requesterType,
       
-      // Pickup location (farmer) with enhanced coordinate handling
+      // Pickup location (farmer or vendor) with enhanced coordinate handling
       pickup: {
         location: delivery.pickupLocation,
-        coordinates: delivery.pickupCoordinates || delivery.farmer?.coordinates || {
+        coordinates: delivery.pickupCoordinates || requester?.coordinates || {
           // Fallback coordinates for Kathmandu area if nothing else available
           latitude: 27.7172,
           longitude: 85.3240
         },
         contact: {
-          name: delivery.farmer?.name,
-          email: delivery.farmer?.email
-        }
+          name: requester?.name,
+          email: requester?.email
+        },
+        requesterType: requesterType
       },
       
       // Delivery destination (warehouse or custom location) with enhanced fallbacks
@@ -902,7 +968,7 @@ router.get('/admin/pending-deliveries', protect, async (req, res) => {
   }
 });
 
-// Admin: Accept and assign transporter to regular delivery request
+// Admin: Accept and assign transporter to regular delivery request (with smart warehouse assignment)
 router.put('/admin/accept-delivery/:deliveryId', protect, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -916,7 +982,8 @@ router.put('/admin/accept-delivery/:deliveryId', protect, async (req, res) => {
       scheduledDeliveryTime,
       warehouseId,
       pickupCoordinates,
-      dropoffCoordinates
+      dropoffCoordinates,
+      useSmartWarehouseAssignment = true
     } = req.body;
     
     if (!transporterId) {
@@ -934,27 +1001,67 @@ router.put('/admin/accept-delivery/:deliveryId', protect, async (req, res) => {
       return res.status(404).json({ message: 'Transporter not found' });
     }
 
-    // Verify warehouse if provided
-    let warehouse = null;
+    // Get requester (farmer or vendor) for smart warehouse assignment
+    let requester = null;
+    if (delivery.farmer) {
+      requester = await User.findById(delivery.farmer);
+    } else if (delivery.vendor || delivery.requestedBy) {
+      requester = await User.findById(delivery.vendor || delivery.requestedBy);
+    }
+
+    // Smart warehouse assignment or manual selection
+    let finalWarehouse = null;
+    let finalDropoffCoordinates = dropoffCoordinates;
+    let finalDropoffLocation = delivery.dropoffLocation;
+    
     if (warehouseId) {
+      // Manual warehouse selection
       const Warehouse = require('../models/Warehouse');
-      warehouse = await Warehouse.findById(warehouseId);
-      if (!warehouse) {
+      finalWarehouse = await Warehouse.findById(warehouseId);
+      if (!finalWarehouse) {
         return res.status(404).json({ message: 'Warehouse not found' });
+      }
+      finalDropoffLocation = finalWarehouse.location;
+      finalDropoffCoordinates = finalWarehouse.coordinates;
+    } else if (useSmartWarehouseAssignment && requester?.coordinates) {
+      // Use smart warehouse assignment
+      console.log('🧠 Using smart warehouse assignment...');
+      
+      try {
+        const optimalWarehouse = await WarehouseService.findOptimalWarehouse(
+          requester.coordinates,
+          delivery.quantity,
+          delivery.goodsDescription,
+          delivery.dropoffLocation // preferred location if specified
+        );
+        
+        if (optimalWarehouse) {
+          finalWarehouse = optimalWarehouse.warehouse;
+          finalDropoffLocation = finalWarehouse.location;
+          finalDropoffCoordinates = finalWarehouse.coordinates;
+          
+          console.log(`✅ Smart warehouse assignment: ${finalWarehouse.location} (score: ${optimalWarehouse.scores.total.toFixed(1)})`);
+          
+          // Add assignment reasoning to admin notes
+          const assignmentNotes = `Smart warehouse assigned: ${finalWarehouse.location} (Distance: ${optimalWarehouse.distance === Infinity ? 'unknown' : optimalWarehouse.distance.toFixed(1) + 'km'}, Utilization: ${optimalWarehouse.utilization.utilizationRate.toFixed(1)}%, Score: ${optimalWarehouse.scores.total.toFixed(1)})`;
+          notes = notes ? `${notes}\n${assignmentNotes}` : assignmentNotes;
+        } else {
+          console.warn('⚠️ Smart warehouse assignment failed, using manual fallback');
+        }
+      } catch (warehouseError) {
+        console.error('❌ Error in smart warehouse assignment:', warehouseError);
+        // Continue with manual assignment or existing dropoff location
       }
     }
 
     // Get farmer's coordinates if not manually provided
     let finalPickupCoordinates = pickupCoordinates;
-    if (!pickupCoordinates) {
-      const farmer = await User.findById(delivery.farmer);
-      if (farmer?.coordinates?.latitude && farmer?.coordinates?.longitude) {
-        finalPickupCoordinates = {
-          latitude: farmer.coordinates.latitude,
-          longitude: farmer.coordinates.longitude
-        };
-        console.log(`Using farmer's admin-managed coordinates for pickup: ${finalPickupCoordinates.latitude}, ${finalPickupCoordinates.longitude}`);
-      }
+    if (!pickupCoordinates && requester?.coordinates?.latitude && requester?.coordinates?.longitude) {
+      finalPickupCoordinates = {
+        latitude: requester.coordinates.latitude,
+        longitude: requester.coordinates.longitude
+      };
+      console.log(`Using ${delivery.farmer ? 'farmer' : 'requester'}'s admin-managed coordinates for pickup: ${finalPickupCoordinates.latitude}, ${finalPickupCoordinates.longitude}`);
     }
 
     // Update delivery and assign transporter
@@ -975,16 +1082,17 @@ router.put('/admin/accept-delivery/:deliveryId', protect, async (req, res) => {
       delivery.scheduledDeliveryTime = new Date(scheduledDeliveryTime);
     }
     
-    if (warehouseId) {
-      delivery.warehouseLocation = warehouseId;
+    if (finalWarehouse) {
+      delivery.warehouseLocation = finalWarehouse._id;
+      delivery.dropoffLocation = finalDropoffLocation;
     }
     
     if (finalPickupCoordinates) {
       delivery.pickupCoordinates = finalPickupCoordinates;
     }
     
-    if (dropoffCoordinates) {
-      delivery.dropoffCoordinates = dropoffCoordinates;
+    if (finalDropoffCoordinates) {
+      delivery.dropoffCoordinates = finalDropoffCoordinates;
     }
 
     await delivery.save();
@@ -1494,6 +1602,49 @@ function calculateDistance(locationHistory) {
   
   return totalDistance;
 }
+
+// Add route to get completed deliveries (history) for transporters
+router.get('/history', protect, async (req, res) => {
+  try {
+    if (req.user.role === 'transporter') {
+      // Return only completed deliveries for transporters
+      const deliveries = await Delivery.find({
+        transporter: req.user.id, 
+        status: { $in: ['delivered', 'cancelled'] }
+      })
+      .populate('farmer vendor', 'name location')
+      .sort({ completedAt: -1, actualDeliveryTime: -1, createdAt: -1 })
+      .limit(50); // Limit to last 50 completed deliveries
+      
+      return res.json(deliveries);
+    }
+    
+    // For other roles, return their delivery history
+    let query = {};
+    if (req.user.role === 'farmer') {
+      query = { farmer: req.user.id, status: { $in: ['delivered', 'cancelled'] } };
+    } else if (req.user.role === 'market_vendor') {
+      query = { 
+        $or: [
+          { vendor: req.user.id, status: { $in: ['delivered', 'cancelled'] } },
+          { requestedBy: req.user.id, requesterType: 'market_vendor', status: { $in: ['delivered', 'cancelled'] } }
+        ]
+      };
+    } else if (['warehouse_manager', 'admin'].includes(req.user.role)) {
+      query = { status: { $in: ['delivered', 'cancelled'] } };
+    }
+    
+    const deliveries = await Delivery.find(query)
+      .populate('farmer vendor transporter', 'name location')
+      .sort({ actualDeliveryTime: -1, createdAt: -1 })
+      .limit(100); // More history for managers/admins
+    
+    res.json(deliveries);
+  } catch (error) {
+    console.error('Error fetching delivery history:', error);
+    res.status(500).json({ message: 'Error fetching delivery history', error: error.message });
+  }
+});
 
 // Get delivery analytics
 router.get('/analytics', protect, async (req, res) => {

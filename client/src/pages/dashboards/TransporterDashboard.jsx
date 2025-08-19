@@ -1377,40 +1377,48 @@ useEffect(() => {
         return d.transporter === user.id || d.transporter?.toString() === user.id;
       });
       
-      console.log('Filtered deliveries for transporter:', assigned.length);
-      console.log('Assigned deliveries:', assigned);
+      // Exclude completed/cancelled tasks from active list
+      const activeAssigned = assigned.filter(d => d.status !== 'delivered' && d.status !== 'cancelled');
+      
+      console.log('Filtered deliveries for transporter (active only):', activeAssigned.length);
+      console.log('Active assigned deliveries:', activeAssigned);
       
       // Log delivery statuses for debugging
-      console.log('Delivery statuses:');
-      assigned.forEach((delivery, index) => {
+      console.log('Delivery statuses (active only):');
+      activeAssigned.forEach((delivery, index) => {
         console.log(`Delivery ${index + 1}: ID=${delivery._id}, Status="${delivery.status}", Type=${typeof delivery.status}`);
       });
       
       const statusCounts = {
         delivered: assigned.filter(d => d.status === 'delivered').length,
-        in_transit: assigned.filter(d => d.status === 'in_transit').length,
-        assigned: assigned.filter(d => d.status === 'assigned').length,
-        other: assigned.filter(d => !['delivered', 'in_transit', 'assigned'].includes(d.status)).length
+        in_transit: activeAssigned.filter(d => d.status === 'in_transit').length,
+        assigned: activeAssigned.filter(d => d.status === 'assigned').length,
+        other: activeAssigned.filter(d => !['delivered', 'in_transit', 'assigned'].includes(d.status)).length
       };
       console.log('Status counts:', statusCounts);
       
-      setDeliveries(assigned);
+      setDeliveries(activeAssigned);
     } catch (err) {
       console.error("Failed to load deliveries", err);
     }
   };
-
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (id, newStatus) =e {
     try {
       await axios.put(
         `http://localhost:5000/api/deliveries/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchDeliveries();
+      // Optimistically update UI: remove completed/cancelled tasks from active list
+      if (newStatus === 'delivered' || newStatus === 'cancelled') {
+        setDeliveries(prev =e prev.filter(d =e String(d._id) !== String(id)));
+      } else {
+        fetchDeliveries();
+      }
     } catch (err) {
       console.error("Failed to update delivery status", err);
     }
+  };
   };
 
   const fetchNotifications = async () => {
@@ -1653,13 +1661,16 @@ useEffect(() => {
     { name: 'Delivered', value: completedDeliveries, fill: '#10B981' }
   ];
 
-  const filteredDeliveries = deliveries.filter(delivery => 
-    (statusFilter === 'all' || delivery.status === statusFilter) &&
-    (searchTerm === '' || 
-     delivery.goodsDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     delivery.pickupLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     delivery.dropoffLocation?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredDeliveries = deliveries
+    // Defensive guard: ensure delivered/cancelled never show in the active list render
+    .filter(d => ['assigned', 'in_transit', 'pending'].includes(d.status))
+    .filter(delivery => 
+      (statusFilter === 'all' || delivery.status === statusFilter) &&
+      (searchTerm === '' || 
+       delivery.goodsDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       delivery.pickupLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       delivery.dropoffLocation?.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
   // Debug logging for state values
   console.log('Current state values:');
@@ -2173,9 +2184,9 @@ useEffect(() => {
             </div>
 
             <div className="grid gap-6">
-              {filteredDeliveries.length > 0 ? (
-                filteredDeliveries.map((delivery, index) => (
-                  <div key={index} className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+              {filteredDeliveries.length e 0 ? (
+                filteredDeliveries.map((delivery, index) =e (
+                  cdiv key={delivery._id || index} className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300"
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center">
@@ -2519,7 +2530,12 @@ useEffect(() => {
               <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 flex items-center">
-                    🗺️ Delivery Route - {routeDelivery.farmerId?.name || routeDelivery.farmer?.name || 'Unknown Farmer'}
+                    🗺️ Delivery Route - {routeData.pickup?.contact?.name || routeDelivery.farmerId?.name || routeDelivery.farmer?.name || 'Unknown Requester'}
+                    {routeData.requesterType && (
+                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded capitalize">
+                        {routeData.requesterType === 'market_vendor' ? 'Vendor' : 'Farmer'}
+                      </span>
+                    )}
                   </h3>
                   <button
                     onClick={() => {
@@ -2611,7 +2627,7 @@ useEffect(() => {
                   <h4 className="font-medium text-yellow-800 mb-2">📋 Instructions</h4>
                   <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
                     <li>Navigate to the pickup location shown above</li>
-                    <li>Contact the farmer: {routeDelivery.farmerId?.phone || routeDelivery.farmer?.phone || 'N/A'}</li>
+                    <li>Contact the {routeData.requesterType === 'market_vendor' ? 'vendor' : 'farmer'}: {routeData.pickup?.contact?.email || routeDelivery.farmerId?.phone || routeDelivery.farmer?.phone || 'N/A'}</li>
                     <li>Verify and collect all items listed above</li>
                     <li>Mark items as "Picked Up" in the deliveries tab</li>
                     <li>Navigate to the warehouse for delivery</li>
