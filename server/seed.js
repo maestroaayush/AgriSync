@@ -34,7 +34,9 @@ const seedData = async () => {
       password: hashedPassword,
       role: 'farmer',
       location: 'Farm Valley',
-      phone: '555-0101'
+      phone: '555-0101',
+      approved: true,
+      coordinates: { latitude: 27.6, longitude: 85.2, address: 'Farm Valley' }
     });
 
     const farmer2 = new User({
@@ -43,7 +45,9 @@ const seedData = async () => {
       password: hashedPassword,
       role: 'farmer',
       location: 'Green Hills',
-      phone: '555-0102'
+      phone: '555-0102',
+      approved: true,
+      coordinates: { latitude: 27.8, longitude: 85.4, address: 'Green Hills' }
     });
 
     const warehouseManager = new User({
@@ -52,7 +56,9 @@ const seedData = async () => {
       password: hashedPassword,
       role: 'warehouse_manager',
       location: 'Central Warehouse',
-      phone: '555-0201'
+      phone: '555-0201',
+      approved: true,
+      coordinates: { latitude: 27.7, longitude: 85.3, address: 'Central Warehouse' }
     });
 
     const transporter = new User({
@@ -61,7 +67,16 @@ const seedData = async () => {
       password: hashedPassword,
       role: 'transporter',
       location: 'Transport Hub',
-      phone: '555-0301'
+      phone: '555-0301',
+      approved: true,
+      coordinates: { latitude: 27.7, longitude: 85.3, address: 'Transport Hub' },
+      currentLocation: { 
+        latitude: 27.7, 
+        longitude: 85.3, 
+        address: 'Transport Hub', 
+        lastUpdated: new Date(),
+        isOnline: true 
+      }
     });
 
     await Promise.all([farmer1.save(), farmer2.save(), warehouseManager.save(), transporter.save()]);
@@ -186,7 +201,7 @@ const seedData = async () => {
     const goodsTypes = ['Wheat', 'Rice', 'Tomatoes', 'Corn', 'Potatoes', 'Barley', 'Soybeans', 'Onions', 'Carrots', 'Cabbage'];
     const locations = ['Farm Valley', 'Green Hills', 'Riverside Farm', 'Mountain View', 'Sunset Fields'];
     const destinations = ['Central Warehouse', 'Farm Valley', 'Green Market', 'City Store', 'Processing Plant'];
-    const urgencyLevels = ['Low', 'Normal', 'High', 'Urgent'];
+const urgencyLevels = ['low', 'normal', 'high', 'urgent'];
     
     // Create deliveries specifically for transporter (first 10) with varied statuses
     for (let i = 0; i < 10; i++) {

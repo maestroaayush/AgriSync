@@ -1,0 +1,909 @@
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/" `
+-WebSession $session `
+-Headers @{
+"Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Cache-Control"="max-age=0"
+  "Sec-Fetch-Dest"="document"
+  "Sec-Fetch-Mode"="navigate"
+  "Sec-Fetch-Site"="none"
+  "Sec-Fetch-User"="?1"
+  "Upgrade-Insecure-Requests"="1"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/@vite/client" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/main.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/@react-refresh" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react-dom_client.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/App.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/index.css" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/context/AuthContext.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/main.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/vite/dist/client/env.mjs" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/@vite/client"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-HSUUC2QV.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-DC5AMYBS.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+Invoke-WebRequest -UseBasicParsing -Uri "ws://localhost:5175/?token=gkPCBtEbjcJ6" `
+-WebSession $session `
+-Headers @{
+"Upgrade"="websocket"
+  "Origin"="http://localhost:5175"
+  "Cache-Control"="no-cache"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Pragma"="no-cache"
+  "Sec-WebSocket-Key"="uhCjDWx8aei/qt0uy0tIZw=="
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Sec-WebSocket-Version"="13"
+  "Sec-WebSocket-Protocol"="vite-hmr"
+  "Sec-WebSocket-Extensions"="permessage-deflate; client_max_window_bits"
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react-router-dom.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/Home.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/Register.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/AuthCallback.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/CompleteProfile.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/routes/PrivateRoute.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/TestDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/TransporterDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/WarehouseDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/VendorDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/dashboards/AdminDashboard.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/components/DashboardRedirect.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/TestComponent.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/App.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-A7ECLLTJ.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/react-dom_client.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/framer-motion.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/Home.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/lucide-react.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/Home.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/components/Modal.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/Home.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/pages/Login.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/Home.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/axios.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/CompleteProfile.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/recharts.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/components/TransporterMap.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react-leaflet.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/leaflet/dist/leaflet.css" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/leaflet.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/FarmerDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/socket__io-client.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/TransporterDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/react-datepicker.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/TransporterDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/react-datepicker/dist/react-datepicker.css" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/TransporterDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/src/components/AddInventoryModal.jsx" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/pages/dashboards/WarehouseDashboard.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/src/components/Modal.jsx"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-JNNNAK6O.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/framer-motion.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-74OVJCVR.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/leaflet.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/node_modules/.vite/deps/chunk-FCSS27DJ.js?v=e18ea2f2" `
+-WebSession $session `
+-Headers @{
+"Accept"="*/*"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Origin"="http://localhost:5175"
+  "Referer"="http://localhost:5175/node_modules/.vite/deps/react-datepicker.js?v=e18ea2f2"
+  "Sec-Fetch-Dest"="script"
+  "Sec-Fetch-Mode"="cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+};
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+$session.Cookies.Add((New-Object System.Net.Cookie("__stripe_mid", "91a29168-f238-401b-aadc-6631f92cb68a0f6c85", "/", "localhost")))
+$session.Cookies.Add((New-Object System.Net.Cookie("_pk_id.1.1fff", "3dbafcde0b65c428.1754136055.", "/", "localhost")))
+Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5175/vite.svg" `
+-WebSession $session `
+-Headers @{
+"Accept"="image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+  "Accept-Encoding"="gzip, deflate, br, zstd"
+  "Accept-Language"="en-US,en;q=0.9"
+  "Referer"="http://localhost:5175/"
+  "Sec-Fetch-Dest"="image"
+  "Sec-Fetch-Mode"="no-cors"
+  "Sec-Fetch-Site"="same-origin"
+  "sec-ch-ua"="`"Not)A;Brand`";v=`"8`", `"Chromium`";v=`"138`", `"Google Chrome`";v=`"138`""
+  "sec-ch-ua-mobile"="?0"
+  "sec-ch-ua-platform"="`"Linux`""
+}

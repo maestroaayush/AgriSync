@@ -1,0 +1,43 @@
+#!/bin/bash
+
+echo "🧪 Testing Warehouse Data Availability"
+echo "====================================="
+
+echo ""
+echo "📡 Testing API endpoints..."
+
+echo ""
+echo "1. Testing traditional warehouses:"
+echo "curl -s http://localhost:5000/api/warehouses?manualOnly=true"
+curl -s "http://localhost:5000/api/warehouses?manualOnly=true" | jq '.' 2>/dev/null || curl -s "http://localhost:5000/api/warehouses?manualOnly=true"
+
+echo ""
+echo ""
+echo "2. Testing warehouse managers with locations:"
+echo "curl -s http://localhost:5000/api/auth/users/locations?role=warehouse_manager"
+curl -s "http://localhost:5000/api/auth/users/locations?role=warehouse_manager" | jq '.' 2>/dev/null || curl -s "http://localhost:5000/api/auth/users/locations?role=warehouse_manager"
+
+echo ""
+echo ""
+echo "3. Testing all users with locations:"
+echo "curl -s http://localhost:5000/api/auth/users/locations"
+curl -s "http://localhost:5000/api/auth/users/locations" | jq '.' 2>/dev/null || curl -s "http://localhost:5000/api/auth/users/locations"
+
+echo ""
+echo ""
+echo "✅ API tests completed!"
+echo ""
+echo "🔍 Next steps to debug warehouse selection:"
+echo "1. Open browser and go to http://localhost:5174"
+echo "2. Login as admin"
+echo "3. Go to Location tab and set coordinates for warehouse managers"
+echo "4. Go to Delivery tab"
+echo "5. Click 'Manage' on a pending delivery"
+echo "6. Check the browser console for debug messages"
+echo "7. Look at the debug info section in the warehouse dropdown"
+echo ""
+echo "📋 Debug messages to look for:"
+echo "- '🔍 Debug - Opening delivery modal, fetching warehouse data...'"
+echo "- '🔍 Debug - usersWithLocations: [array data]'"
+echo "- '🔍 Debug - warehouses: [array data]'"
+echo "- '🔍 Debug - combined warehouses: [combined array]'"

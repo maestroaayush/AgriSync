@@ -12,7 +12,8 @@ const deliverySchema = new mongoose.Schema({
   },
   dropoffLocation: {
     type: String,
-    required: true
+    required: false,
+    default: null
   },
   goodsDescription: {
     type: String,
@@ -25,14 +26,94 @@ receivedByWarehouse: {
   quantity: Number,
   status: {
     type: String,
-    enum: ['pending', 'assigned', 'in_transit', 'delivered'],
+    enum: ['pending', 'assigned', 'in_transit', 'delivered', 'requested', 'rejected'],
     default: 'pending'
   },
   transporter: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null
-  }
+  },
+  urgency: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal'
+  },
+  statusHistory: [{
+    status: String,
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    updatedAt: Date,
+    previousStatus: String
+  }],
+  // Real-time location tracking
+  currentLocation: {
+    latitude: Number,
+    longitude: Number,
+    address: String,
+    lastUpdated: Date
+  },
+  locationHistory: [{
+    latitude: {
+      type: Number,
+      required: true
+    },
+    longitude: {
+      type: Number,
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    speed: Number, // km/h
+    heading: Number, // degrees
+    accuracy: Number // meters
+  }],
+  estimatedArrival: Date,
+  scheduledPickupTime: Date,
+  scheduledDeliveryTime: Date,
+  actualPickupTime: Date,
+  actualDeliveryTime: Date,
+  pickedUp: {
+    type: Boolean,
+    default: false
+  },
+  pickedUpAt: Date,
+  adminNotes: String,
+  
+  // Route and location information
+  pickupCoordinates: {
+    latitude: Number,
+    longitude: Number,
+    address: String
+  },
+  dropoffCoordinates: {
+    latitude: Number,
+    longitude: Number,
+    address: String
+  },
+  warehouseLocation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Warehouse'
+  },
+  
+  // Admin assignment fields
+  assignedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  assignedAt: Date,
+  
+  // Rejection fields
+  rejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectedAt: Date,
+  rejectionReason: String
 }, {
   timestamps: true
 });

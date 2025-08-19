@@ -4,6 +4,7 @@ const Inventory = require('../models/Inventory');
 const protect = require('../middleware/authMiddleware');
 const Warehouse = require('../models/Warehouse');
 const Notification = require('../models/Notification');
+const NotificationService = require('../services/notificationService');
 
 // Middleware to restrict access by role
 const allowRoles = (...roles) => (req, res, next) => {
@@ -21,27 +22,48 @@ router.get('/', protect, async (req, res) => {
 
 // POST create inventory item with capacity limit
 router.post('/', protect, allowRoles('farmer', 'warehouse_manager'), async (req, res) => {
-  const { itemName, quantity, unit, location } = req.body;
+  try {
+    console.log('Adding inventory item:', req.body);
+    const { itemName, quantity, unit, location, category, price, qualityGrade, qualityCertification, description, harvestDate, expiryDate } = req.body;
 
-  // Check if warehouse has capacity set
-  const warehouse = await Warehouse.findOne({ location });
-  if (!warehouse) return res.status(400).json({ message: 'Warehouse not registered' });
+    // Check if warehouse has capacity set (more flexible for testing)
+    let warehouse = await Warehouse.findOne({ location });
+    
+    // If warehouse doesn't exist, create a default one for testing
+    if (!warehouse) {
+      console.log(`Creating default warehouse for location: ${location}`);
+      warehouse = new Warehouse({
+        location: location,
+        capacityLimit: 50000 // Default capacity
+      });
+      try {
+        await warehouse.save();
+        console.log(`✅ Created warehouse: ${location}`);
+      } catch (err) {
+        console.error('Error creating warehouse:', err);
+        return res.status(500).json({ message: 'Error setting up warehouse location' });
+      }
+    }
 
-  // Get current total quantity stored at this location
-  const currentStock = await Inventory.aggregate([
-    { $match: { location } },
-    { $group: { _id: null, total: { $sum: "$quantity" } } }
-  ]);
-  const totalStored = currentStock[0]?.total || 0;
+    // Get current total quantity stored at this location
+    const currentStock = await Inventory.aggregate([
+      { $match: { location } },
+      { $group: { _id: null, total: { $sum: "$quantity" } } }
+    ]);
+    const totalStored = currentStock[0]?.total || 0;
+    const newQuantity = parseInt(quantity);
+    const capacityLimit = warehouse.capacityLimit;
+    
+    console.log(`Capacity check: Current=${totalStored}, Adding=${newQuantity}, Limit=${capacityLimit}, Total would be=${totalStored + newQuantity}`);
 
-  // Check if new quantity exceeds capacity
-  if (totalStored + quantity > warehouse.capacityLimit) {
-    return res.status(400).json({
-      message: `Cannot add ${quantity} ${unit}. This would exceed the capacity limit of ${warehouse.capacityLimit} for ${location}.`
-    });
-  }
+    // Check if new quantity exceeds capacity
+    if (totalStored + newQuantity > capacityLimit) {
+      return res.status(400).json({
+        message: `Cannot add ${newQuantity} ${unit}. Current stock: ${totalStored}, would become ${totalStored + newQuantity}, limit is ${capacityLimit} for ${location}.`
+      });
+    }
 
-const percentageUsed = ((totalStored + quantity) / warehouse.capacityLimit) * 100;
+    const percentageUsed = ((totalStored + newQuantity) / capacityLimit) * 100;
 
 if (percentageUsed >= 90) {
   await Notification.create({
@@ -53,14 +75,41 @@ if (percentageUsed >= 90) {
 const newItem = new Inventory({
     user: req.user.id,
     itemName,
-    quantity,
+    quantity: parseInt(quantity),
     unit,
     location,
+    category: category || 'other',
+    price: parseFloat(price) || 0,
+    qualityGrade: qualityGrade || 'Standard',
+    qualityCertification: qualityCertification || '',
+    description: description || '',
+    harvestDate: harvestDate ? new Date(harvestDate) : null,
+    expiryDate: expiryDate ? new Date(expiryDate) : null,
     addedByRole: req.user.role
   });
 
-  await newItem.save();
-  res.status(201).json(newItem);
+    await newItem.save();
+    console.log('Inventory item saved successfully:', newItem);
+    
+    // Create success notification
+    try {
+      await NotificationService.inventoryAdded(req.user.id, {
+        id: newItem._id,
+        itemName: newItem.itemName,
+        quantity: newItem.quantity,
+        unit: newItem.unit
+      });
+      console.log('📬 Inventory added notification created');
+    } catch (notificationError) {
+      console.error('Failed to create inventory notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
+    
+    res.status(201).json(newItem);
+  } catch (error) {
+    console.error('Error adding inventory item:', error);
+    res.status(500).json({ message: 'Error adding inventory item', error: error.message });
+  }
 });
 
 
@@ -87,7 +136,7 @@ router.delete('/:id', protect, async (req, res) => {
   if (!item) return res.status(404).json({ message: 'Item not found' });
   if (item.user.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' });
 
-  await item.remove();
+  await item.deleteOne();
   res.json({ message: 'Item deleted' });
 });
 
