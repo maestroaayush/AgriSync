@@ -226,21 +226,26 @@ function WarehouseDashboard() {
     return;
   }
 
+  // Load essential data only to avoid resource exhaustion
   fetchInventory();
   fetchDeliveries();
-  fetchWarehouseInfo();
   fetchLogs();
-  fetchInventoryTrends();
-  fetchWarehouseMetrics();
-  fetchCapacityTrends();
-  fetchNotifications();
-  fetchActiveDeliveries();
-  const interval = setInterval(fetchNotifications, 30000); // Reduced from 5s to 30s
-  const trackingInterval = setInterval(fetchActiveDeliveries, 60000); // Reduced from 10s to 60s
-  return () => {
-    clearInterval(interval);
-    clearInterval(trackingInterval);
-  };
+  
+  // Disable problematic endpoints that cause ERR_INSUFFICIENT_RESOURCES
+  // fetchWarehouseInfo(); // Commented out - causing resource issues
+  // fetchInventoryTrends(); // Commented out - endpoint doesn't exist
+  // fetchWarehouseMetrics(); // Commented out - endpoint doesn't exist  
+  // fetchCapacityTrends(); // Commented out - endpoint doesn't exist
+  // fetchNotifications(); // Commented out - causing resource issues
+  // fetchActiveDeliveries(); // Commented out - endpoint doesn't exist
+  
+  // Disable automatic refresh intervals to prevent resource exhaustion
+  // const interval = setInterval(fetchNotifications, 30000);
+  // const trackingInterval = setInterval(fetchActiveDeliveries, 60000);
+  // return () => {
+  //   clearInterval(interval);
+  //   clearInterval(trackingInterval);
+  // };
 }, [user]);
 
   const fetchInventory = async () => {
@@ -1099,7 +1104,8 @@ function WarehouseDashboard() {
                     console.log('Unit filter changed to:', e.target.value);
                     setInventoryFilter(e.target.value);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/70"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/70 pointer-events-auto cursor-pointer relative z-20"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 20 }}
                 >
                   <option value="all">All Units</option>
                   {uniqueUnits.map((unit, index) => (
@@ -1121,7 +1127,8 @@ function WarehouseDashboard() {
                     console.log('Available unique crops:', uniqueCrops);
                     setCropFilter(e.target.value);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70 pointer-events-auto cursor-pointer relative z-20"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 20 }}
                 >
                   <option value="all">All Crops</option>
                   {uniqueCrops.map((crop, index) => (
@@ -1130,8 +1137,14 @@ function WarehouseDashboard() {
                 </select>
               </div>
               <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Add Item button clicked!');
+                  setShowAddModal(true);
+                }}
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg pointer-events-auto cursor-pointer relative z-30"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 30 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Add Item
@@ -1223,8 +1236,12 @@ function WarehouseDashboard() {
               <div className="flex items-center space-x-4">
                 <select
                   value={deliveryFilter}
-                  onChange={(e) => setDeliveryFilter(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70"
+                  onChange={(e) => {
+                    console.log('Delivery filter changed to:', e.target.value);
+                    setDeliveryFilter(e.target.value);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 pointer-events-auto cursor-pointer relative z-20"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 20 }}
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>

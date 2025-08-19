@@ -717,8 +717,12 @@ function VendorDashboard() {
             <div className="md:hidden">
               <select
                 value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-none bg-white/50 text-gray-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                onChange={(e) => {
+                  console.log('Mobile tab changed to:', e.target.value);
+                  setActiveTab(e.target.value);
+                }}
+                className="w-full px-4 py-3 rounded-xl border-none bg-white/50 text-gray-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 pointer-events-auto cursor-pointer relative z-20"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 20 }}
               >
                 <option value="overview">📊 Overview</option>
                 <option value="orders">🛒 Orders</option>
@@ -998,8 +1002,12 @@ function VendorDashboard() {
                 </div>
                 <select
                   value={orderFilter}
-                  onChange={(e) => setOrderFilter(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/70"
+                  onChange={(e) => {
+                    console.log('Order filter changed to:', e.target.value);
+                    setOrderFilter(e.target.value);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/70 pointer-events-auto cursor-pointer relative z-20"
+                  style={{ pointerEvents: 'auto', position: 'relative', zIndex: 20 }}
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -1008,8 +1016,14 @@ function VendorDashboard() {
                 </select>
               </div>
               <button
-                onClick={() => setShowOrderModal(true)}
-                className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-6 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all duration-200 flex items-center shadow-lg"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('New Order button clicked!');
+                  setShowOrderModal(true);
+                }}
+                className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-6 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all duration-200 flex items-center shadow-lg pointer-events-auto cursor-pointer relative z-30"
+                style={{ pointerEvents: 'auto', position: 'relative', zIndex: 30 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
                 New Order
@@ -1080,8 +1094,14 @@ function VendorDashboard() {
                           <ShoppingCart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                           <p className="text-gray-500">No orders found</p>
                           <button
-                            onClick={() => setShowOrderModal(true)}
-                            className="mt-4 bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Place Your First Order button clicked!');
+                              setShowOrderModal(true);
+                            }}
+                            className="mt-4 bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors pointer-events-auto cursor-pointer relative z-30"
+                            style={{ pointerEvents: 'auto', position: 'relative', zIndex: 30 }}
                           >
                             Place Your First Order
                           </button>
@@ -1400,8 +1420,14 @@ function VendorDashboard() {
                     <p className="text-gray-600 mt-1">Configure automatic notifications for low stock levels</p>
                   </div>
                   <button 
-                    onClick={() => setShowStockAlertModal(true)}
-                    className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center shadow-lg"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('New Alert button clicked!');
+                      setShowStockAlertModal(true);
+                    }}
+                    className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center shadow-lg pointer-events-auto cursor-pointer relative z-30"
+                    style={{ pointerEvents: 'auto', position: 'relative', zIndex: 30 }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     New Alert
