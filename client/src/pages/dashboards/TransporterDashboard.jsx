@@ -1428,20 +1428,30 @@ useEffect(() => {
   };
   const updateStatus = async (id, newStatus) => {
     try {
-      await axios.put(
+      const response = await axios.put(
         `http://localhost:5000/api/deliveries/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Optimistically update UI: remove completed/cancelled tasks from active list
+      
+      console.log('✅ Status update successful:', response.data);
+      
+      // Only update UI if the API call was successful
       if (newStatus === 'delivered' || newStatus === 'cancelled') {
         setDeliveries(prev => prev.filter(d => String(d._id) !== String(id)));
         setRenderKey(prev => prev + 1);
       } else {
         fetchDeliveries();
       }
+      
+      return response.data; // Return the response for the caller to use
     } catch (err) {
       console.error("Failed to update delivery status", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      
+      // Throw the error so the calling code can handle it
+      throw err;
     }
   };
 
@@ -2390,16 +2400,29 @@ useEffect(() => {
                               onClick={async () => {
                                 console.log('🚛 Starting transit for delivery:', delivery._id);
                                 
-                                // 1. Update status to in_transit
-                                await updateStatus(delivery._id, 'in_transit');
-                                
-                                // 2. Start automatic location sharing
-                                startLocationSharing(delivery._id);
-                                
-                                // 3. Fetch and display route to pickup location
-                                await viewRouteInTab(delivery._id);
-                                
-                                console.log('✅ Auto-transit flow initiated: location sharing + route to pickup');
+                                try {
+                                  // 1. Update status to in_transit
+                                  await updateStatus(delivery._id, 'in_transit');
+                                  
+                                  // 2. Start automatic location sharing
+                                  startLocationSharing(delivery._id);
+                                  
+                                  // 3. Fetch and display route to pickup location
+                                  await viewRouteInTab(delivery._id);
+                                  
+                                  console.log('✅ Auto-transit flow initiated: location sharing + route to pickup');
+                                } catch (error) {
+                                  console.error('❌ Failed to start transit:', error);
+                                  
+                                  let errorMessage = '❌ Failed to start transit\n\n';
+                                  if (error.response?.status === 500) {
+                                    errorMessage += '🔧 Server Error (500)\n';
+                                    errorMessage += 'Unable to update delivery status. Please try again.';
+                                  } else {
+                                    errorMessage += `Error: ${error.response?.data?.message || error.message}`;
+                                  }
+                                  alert(errorMessage);
+                                }
                               }}
                               className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2 rounded-lg text-sm hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 flex items-center"
                             >
@@ -2410,18 +2433,86 @@ useEffect(() => {
                         )}
                         {delivery.status === 'in_transit' && !delivery.pickedUp && (
                           <>
-                            <button
-                              onClick={() => markAsPickedUp(delivery._id)}
-                              disabled={pickupLoading === delivery._id}
-                              className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-2 rounded-lg text-sm hover:from-orange-600 hover:to-orange-700 transition-all duration-200 flex items-center disabled:opacity-50"
-                            >
-                              {pickupLoading === delivery._id ? (
-                                <div className="w-4 h-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                <Package className="h-4 w-4 mr-1" />
-                              )}
-                              Mark Picked Up
-                            </button>
+                            {/* For vendor deliveries (warehouse to vendor), show Mark as Delivered directly */}
+                            {(delivery.requesterType === 'market_vendor' || delivery.vendor) ? (
+                              <button
+                                onClick={async () => {
+                                  console.log('✅ Marking vendor delivery as completed for:', delivery._id);
+                                  
+                                  try {
+                                    // Show loading state
+                                    setPickupLoading(delivery._id);
+                                    
+                                    // Update status to delivered
+                                    await updateStatus(delivery._id, 'delivered');
+                                    
+                                    // Automatically stop location sharing
+                                    stopLocationSharing();
+                                    
+                                    console.log('🔄 Vendor delivery completed: status updated + location sharing stopped');
+                                    
+                                    // Show success message with inventory transfer info
+                                    alert(`✅ Delivery to Vendor Completed Successfully!\n\n📦 Delivery: ${delivery.goodsDescription} (${delivery.quantity} units)\n🏪 Vendor: ${delivery.vendor?.name || delivery.requestedBy?.name || 'Market Vendor'}\n🏦 Warehouse inventory: Items automatically removed\n🏪 Vendor inventory: Items automatically added\n🔄 Location sharing: Stopped\n\nThe vendor and warehouse manager have been notified.`);
+                                    
+                                  } catch (error) {
+                                    console.error('❌ Error completing vendor delivery:', error);
+                                    console.error('Error details:', {
+                                      status: error.response?.status,
+                                      data: error.response?.data,
+                                      message: error.response?.data?.message || error.message
+                                    });
+                                    
+                                    // Provide detailed error feedback
+                                    let errorMessage = '❌ Failed to complete delivery\n\n';
+                                    
+                                    if (error.response?.status === 500) {
+                                      errorMessage += '🔧 Server Error (500)\n';
+                                      errorMessage += `Details: ${error.response?.data?.message || 'Internal server error occurred'}\n\n`;
+                                      errorMessage += 'This could be due to:\n';
+                                      errorMessage += '• Missing vendor information\n';
+                                      errorMessage += '• Database connection issues\n';
+                                      errorMessage += '• Invalid delivery data\n\n';
+                                      errorMessage += 'Please try again or contact support if the issue persists.';
+                                    } else if (error.response?.status === 404) {
+                                      errorMessage += '📦 Delivery not found\n';
+                                      errorMessage += 'The delivery may have been deleted or already completed.';
+                                    } else if (error.response?.status === 401) {
+                                      errorMessage += '🔐 Authentication error\n';
+                                      errorMessage += 'Please log in again.';
+                                    } else {
+                                      errorMessage += `Error: ${error.response?.data?.message || error.message}`;
+                                    }
+                                    
+                                    alert(errorMessage);
+                                  } finally {
+                                    setPickupLoading(null);
+                                  }
+                                }}
+                                disabled={pickupLoading === delivery._id}
+                                className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center disabled:opacity-50"
+                              >
+                                {pickupLoading === delivery._id ? (
+                                  <div className="w-4 h-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                )}
+                                Mark as Delivered
+                              </button>
+                            ) : (
+                              /* For farmer deliveries, show Mark Picked Up */
+                              <button
+                                onClick={() => markAsPickedUp(delivery._id)}
+                                disabled={pickupLoading === delivery._id}
+                                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-2 rounded-lg text-sm hover:from-orange-600 hover:to-orange-700 transition-all duration-200 flex items-center disabled:opacity-50"
+                              >
+                                {pickupLoading === delivery._id ? (
+                                  <div className="w-4 h-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <Package className="h-4 w-4 mr-1" />
+                                )}
+                                Mark Picked Up
+                              </button>
+                            )}
                             <button
                               onClick={() => viewRouteInTab(delivery._id)}
                               className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center"
@@ -2482,7 +2573,34 @@ useEffect(() => {
                                   
                                 } catch (error) {
                                   console.error('❌ Error completing delivery:', error);
-                                  alert(`❌ Failed to complete delivery: ${error.message}`);
+                                  console.error('Error details:', {
+                                    status: error.response?.status,
+                                    data: error.response?.data,
+                                    message: error.response?.data?.message || error.message
+                                  });
+                                  
+                                  // Provide detailed error feedback
+                                  let errorMessage = '❌ Failed to complete delivery\n\n';
+                                  
+                                  if (error.response?.status === 500) {
+                                    errorMessage += '🔧 Server Error (500)\n';
+                                    errorMessage += `Details: ${error.response?.data?.message || 'Internal server error occurred'}\n\n`;
+                                    errorMessage += 'This could be due to:\n';
+                                    errorMessage += '• Missing farmer/vendor information\n';
+                                    errorMessage += '• Database connection issues\n';
+                                    errorMessage += '• Invalid delivery data\n\n';
+                                    errorMessage += 'Please try again or contact support if the issue persists.';
+                                  } else if (error.response?.status === 404) {
+                                    errorMessage += '📦 Delivery not found\n';
+                                    errorMessage += 'The delivery may have been deleted or already completed.';
+                                  } else if (error.response?.status === 401) {
+                                    errorMessage += '🔐 Authentication error\n';
+                                    errorMessage += 'Please log in again.';
+                                  } else {
+                                    errorMessage += `Error: ${error.response?.data?.message || error.message}`;
+                                  }
+                                  
+                                  alert(errorMessage);
                                 } finally {
                                   setPickupLoading(null);
                                 }
@@ -3281,7 +3399,7 @@ useEffect(() => {
                       <span className="text-lg font-bold text-purple-600">{transportMetrics.completionRate}%</span>
                     </div>
                     {fuelData && (
-                      <React.Fragment>
+                      <>
                         <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                           <span className="text-sm font-medium text-orange-800">Fuel Economy</span>
                           <span className="text-lg font-bold text-orange-600">{fuelData.avgFuelEconomy} km/l</span>
@@ -3294,7 +3412,7 @@ useEffect(() => {
                           <span className="text-sm font-medium text-gray-800">CO2 Emissions</span>
                           <span className="text-lg font-bold text-gray-600">{fuelData.co2Emissions} kg</span>
                         </div>
-                      </React.Fragment>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -3337,7 +3455,7 @@ useEffect(() => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <a 
-                href={buildUrl("http://localhost:5000/api/export/deliveries")} 
+                href={buildUrl("http://localhost:5000/api/export/transporter/deliveries")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-lg hover:from-sky-100 hover:to-sky-200 transition-all duration-200 group text-center"
               >
                 <div>
@@ -3346,21 +3464,21 @@ useEffect(() => {
                 </div>
               </a>
               <a 
-                href={buildUrl("http://localhost:5000/api/export/transport-summary")} 
+                href={buildUrl("http://localhost:5000/api/export/transporter/deliveries?format=xlsx")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 group text-center"
               >
                 <div>
                   <Download className="h-8 w-8 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-blue-700">Transport Summary</span>
+                  <span className="text-sm font-medium text-blue-700">Deliveries (Excel)</span>
                 </div>
               </a>
               <a 
-                href={buildUrl("http://localhost:5000/api/export/routes")} 
+                href={buildUrl("http://localhost:5000/api/export/transporter/deliveries?format=pdf")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-all duration-200 group text-center"
               >
                 <div>
                   <Download className="h-8 w-8 text-green-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-green-700">Routes (CSV)</span>
+                  <span className="text-sm font-medium text-green-700">Deliveries (PDF)</span>
                 </div>
               </a>
             </div>

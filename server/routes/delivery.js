@@ -82,7 +82,7 @@ router.post('/', protect, async (req, res) => {
       pickupCoordinates: pickupCoordinates,
       unit: unit || 'units',
       requesterType: requesterType || req.user.role,
-      requestedBy: req.user.id
+      requestedBy: req.user._id || req.user.id  // Use _id first, fallback to id
     };
 
     // Set the appropriate field based on user role
@@ -295,6 +295,14 @@ router.put('/:id/status', protect, async (req, res) => {
     // If status is changed to 'delivered', automatically manage inventory
     if (status === 'delivered' && oldStatus !== 'delivered') {
       console.log('🔄 Auto-managing delivery inventory using smart warehouse service...');
+      console.log('📦 Delivery details:', {
+        id: delivery._id,
+        vendor: delivery.vendor,
+        farmer: delivery.farmer,
+        requesterType: delivery.requesterType,
+        pickupLocation: delivery.pickupLocation,
+        dropoffLocation: delivery.dropoffLocation
+      });
       
       try {
         // Set delivery as completed
@@ -320,18 +328,28 @@ router.put('/:id/status', protect, async (req, res) => {
           // Continue without warehouse checks - delivery can still be marked as completed
         }
         
-        const isToVendor = delivery.vendor || delivery.requesterType === 'market_vendor';
+        const isToVendor = !!(delivery.vendor || delivery.requesterType === 'market_vendor');
         
         if (isFromWarehouse && isToVendor) {
           // Warehouse to vendor delivery: remove from warehouse, add to vendor
           console.log('🏦➡️🏪 Warehouse to vendor delivery detected');
+          console.log('Vendor ID:', delivery.vendor || delivery.requestedBy);
           
           try {
-            await WarehouseService.removeDeliveryFromWarehouseInventory(
-              delivery,
-              delivery.pickupLocation,
-              req.user // transporter who delivered
-            );
+            // Only try to manage inventory if vendor is properly set
+            const vendorId = delivery.vendor || delivery.requestedBy;
+            if (vendorId) {
+              // This call will both remove from warehouse AND add to vendor inventory
+              const warehouseResult = await WarehouseService.removeDeliveryFromWarehouseInventory(
+                delivery,
+                delivery.pickupLocation,
+                req.user // transporter who delivered
+              );
+              
+              console.log('✅ Warehouse inventory removed:', warehouseResult);
+            } else {
+              console.warn('⚠️ Vendor ID not set, skipping inventory management');
+            }
             
             delivery.receivedByWarehouse = false;
             delivery.deliveredToVendor = true;
@@ -339,17 +357,89 @@ router.put('/:id/status', protect, async (req, res) => {
             
             console.log('✅ Successfully transferred inventory from warehouse to vendor');
             
+            // Emit Socket.IO events for real-time inventory updates
+            const io = req.app.get('io');
+            if (io) {
+              // Notify warehouse manager about inventory decrease
+              let warehouseManager = null;
+              try {
+                warehouseManager = await WarehouseService.getWarehouseManager(delivery.pickupLocation);
+              } catch (managerLookupError) {
+                console.warn('⚠️ Failed to get warehouse manager:', managerLookupError.message);
+              }
+              if (warehouseManager) {
+                io.emit('inventory_updated', {
+                  userId: warehouseManager._id,
+                  type: 'warehouse_inventory_decreased',
+                  itemName: delivery.goodsDescription,
+                  quantityChanged: -delivery.quantity,
+                  location: delivery.pickupLocation,
+                  deliveryId: delivery._id,
+                  timestamp: new Date()
+                });
+                console.log('📡 Warehouse inventory decrease event emitted');
+              }
+              
+              // Notify vendor about inventory increase
+              const vendorId = delivery.vendor || delivery.requestedBy;
+              if (vendorId) {
+                io.emit('inventory_updated', {
+                  userId: vendorId,
+                  type: 'vendor_inventory_increased',
+                  itemName: delivery.goodsDescription,
+                  quantityChanged: delivery.quantity,
+                  deliveryId: delivery._id,
+                  timestamp: new Date()
+                });
+                console.log('📡 Vendor inventory increase event emitted');
+              }
+              
+              // Broadcast general inventory update for dashboards
+              io.emit('delivery_completed', {
+                deliveryId: delivery._id,
+                status: 'delivered',
+                inventoryTransfer: {
+                  warehouseInventoryDecreased: true,
+                  vendorInventoryIncreased: true,
+                  itemName: delivery.goodsDescription,
+                  quantity: delivery.quantity,
+                  fromLocation: delivery.pickupLocation,
+                  toVendor: vendorId
+                },
+                timestamp: new Date()
+              });
+              console.log('📡 Warehouse-to-vendor delivery completed event emitted');
+            }
+            
             // Notify vendor about the delivery
-            if (delivery.vendor) {
+            const vendorId = delivery.vendor || delivery.requestedBy;
+            if (vendorId) {
               await NotificationService.general(
-                delivery.vendor,
+                vendorId,
                 '🏪 Delivery Received',
-                `Your order of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered and added to your inventory.`,
+                `Your order of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered and added to your inventory. Items have been automatically removed from the warehouse.`,
                 'success'
               );
             }
+            
+            // Notify warehouse manager about the outgoing delivery
+            try {
+              const warehouseManager = await WarehouseService.getWarehouseManager(delivery.pickupLocation);
+              if (warehouseManager) {
+                await NotificationService.general(
+                  warehouseManager._id,
+                  '📤 Delivery Dispatched',
+                  `Delivery of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been dispatched from ${delivery.pickupLocation} to vendor. Items automatically removed from warehouse inventory.`,
+                  'success'
+                );
+              }
+            } catch (managerNotifyError) {
+              console.warn('⚠️ Failed to notify warehouse manager:', managerNotifyError.message);
+              // Continue - notification failure shouldn't break the delivery flow
+            }
+            
           } catch (warehouseInventoryError) {
-            console.error('❌ Failed to manage warehouse inventory (non-critical):', warehouseInventoryError);
+            console.error('❌ Failed to manage warehouse to vendor inventory (non-critical):', warehouseInventoryError);
             // Mark delivery as completed even if inventory management fails
             delivery.receivedByWarehouse = false;
             delivery.deliveredToVendor = true;
@@ -1214,6 +1304,8 @@ router.get('/admin/pending-deliveries', protect, async (req, res) => {
       transporter: null 
     })
       .populate('farmer', 'name email location')
+      .populate('vendor', 'name email location')  // Also populate vendor field
+      .populate('requestedBy', 'name email location role')  // Populate requestedBy for vendor requests
       .sort({ createdAt: -1 });
 
     res.json(pendingDeliveries);
@@ -1369,21 +1461,24 @@ router.put('/admin/accept-delivery/:deliveryId', protect, async (req, res) => {
       farmerMessage += ` Expected delivery: ${deliveryTime}.`;
     }
     
-    // Notify farmer that their delivery has been accepted and assigned
-    await NotificationService.general(
-      delivery.farmer,
-      '✅ Delivery Request Approved',
-      farmerMessage,
-      'success'
-    );
+    // Notify requester (farmer or vendor) that their delivery has been accepted and assigned
+    const requesterId = delivery.farmer || delivery.vendor || delivery.requestedBy;
+    if (requesterId) {
+      await NotificationService.general(
+        requesterId,
+        '✅ Delivery Request Approved',
+        farmerMessage,
+        'success'
+      );
+    }
     
     // Enhanced notification to transporter with delivery details
     let transporterMessage = `New delivery assigned: ${delivery.goodsDescription} from ${delivery.pickupLocation}`;
     
     if (delivery.dropoffLocation) {
       transporterMessage += ` to ${delivery.dropoffLocation}`;
-    } else if (warehouse) {
-      transporterMessage += ` to ${warehouse.name} warehouse`;
+    } else if (finalWarehouse) {
+      transporterMessage += ` to ${finalWarehouse.name || finalWarehouse.location} warehouse`;
     }
     
     if (delivery.scheduledPickupTime) {
@@ -1455,13 +1550,16 @@ router.put('/admin/reject-delivery/:deliveryId', protect, async (req, res) => {
 
     await delivery.save();
 
-    // Notify farmer using NotificationService
-    await NotificationService.general(
-      delivery.farmer,
-      '❌ Delivery Request Rejected',
-      `Your delivery request for ${delivery.goodsDescription} has been rejected. Reason: ${delivery.rejectionReason}`,
-      'error'
-    );
+    // Notify requester (farmer or vendor) using NotificationService
+    const requesterId = delivery.farmer || delivery.vendor || delivery.requestedBy;
+    if (requesterId) {
+      await NotificationService.general(
+        requesterId,
+        '❌ Delivery Request Rejected',
+        `Your delivery request for ${delivery.goodsDescription} has been rejected. Reason: ${delivery.rejectionReason}`,
+        'error'
+      );
+    }
 
     res.json({ 
       message: 'Delivery rejected successfully', 

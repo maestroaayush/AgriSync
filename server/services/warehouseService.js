@@ -501,14 +501,22 @@ class WarehouseService {
       console.log('🏪 Adding delivery to vendor inventory:', {
         deliveryId: delivery._id,
         vendor: delivery.vendor,
+        requestedBy: delivery.requestedBy,
         goods: delivery.goodsDescription,
         quantity: delivery.quantity
       });
 
-      // Get vendor information
-      const vendor = await User.findById(delivery.vendor);
+      // Get vendor information - check both vendor and requestedBy fields
+      const vendorId = delivery.vendor || delivery.requestedBy;
+      if (!vendorId) {
+        console.warn('⚠️ No vendor ID found in delivery, skipping vendor inventory creation');
+        return null;
+      }
+      
+      const vendor = await User.findById(vendorId);
       if (!vendor) {
-        throw new Error(`Vendor not found for delivery ${delivery._id}`);
+        console.warn(`⚠️ Vendor ${vendorId} not found for delivery ${delivery._id}`);
+        return null;
       }
 
       // Create inventory item for vendor

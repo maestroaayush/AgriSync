@@ -1589,39 +1589,33 @@ function WarehouseDashboard() {
               </div>
             </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="flex justify-center">
-                <ExportButton
-                  onExport={(format) => {
-                    const url = buildUrl(`http://localhost:5000/api/export/inventory?format=${format}`);
-                    window.location.href = url;
-                  }}
-                  label="Inventory"
-                  formats={['csv', 'xlsx', 'pdf']}
-                  theme="green"
-                />
-              </div>
-              <div className="flex justify-center">
-                <ExportButton
-                  onExport={(format) => {
-                    const url = buildUrl(`http://localhost:5000/api/export/deliveries?format=${format}`);
-                    window.location.href = url;
-                  }}
-                  label="Deliveries"
-                  formats={['csv', 'xlsx', 'pdf']}
-                  theme="purple"
-                />
-              </div>
-              <div className="flex justify-center">
-                <ExportButton
-                  onExport={(format) => {
-                    const url = buildUrl(`http://localhost:5000/api/export/warehouse-summary?format=${format}`);
-                    window.location.href = url;
-                  }}
-                  label="Summary"
-                  formats={['csv', 'xlsx', 'pdf']}
-                  theme="blue"
-                />
-              </div>
+              <a 
+                href={buildUrl("http://localhost:5000/api/export/warehouse/inventory")} 
+                className="flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-all duration-200 group text-center"
+              >
+                <div>
+                  <Download className="h-8 w-8 text-green-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-medium text-green-700">Warehouse Inventory (CSV)</span>
+                </div>
+              </a>
+              <a 
+                href={buildUrl("http://localhost:5000/api/export/warehouse/inventory?format=xlsx")} 
+                className="flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 group text-center"
+              >
+                <div>
+                  <Download className="h-8 w-8 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-medium text-blue-700">Warehouse Inventory (Excel)</span>
+                </div>
+              </a>
+              <a 
+                href={buildUrl("http://localhost:5000/api/export/warehouse/inventory?format=pdf")} 
+                className="flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:from-purple-100 hover:to-purple-200 transition-all duration-200 group text-center"
+              >
+                <div>
+                  <Download className="h-8 w-8 text-purple-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-medium text-purple-700">Warehouse Inventory (PDF)</span>
+                </div>
+              </a>
             </div>
           </div>
         )}

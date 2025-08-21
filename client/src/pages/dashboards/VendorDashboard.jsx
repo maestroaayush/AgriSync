@@ -373,20 +373,54 @@ function VendorDashboard() {
       return;
     }
     
-    // Fetch all data on component mount
-    fetchOrders();
-    fetchInventory();
-    fetchNotifications();
-    fetchExpectedDeliveries();
-    fetchMarketInventory();
-    fetchBestSellingItems();
-    fetchStockAlerts();
+    // Add abort controller for cleanup
+    const abortController = new AbortController();
     
-    // Set up polling for real-time updates
-    const notificationInterval = setInterval(fetchNotifications, 5000);
-    const deliveryInterval = setInterval(fetchExpectedDeliveries, 30000); // Update every 30 seconds
+    // Fetch all data on component mount with staggered timing to prevent overwhelming the browser
+    const fetchInitialData = async () => {
+      try {
+        // Fetch critical data first
+        await fetchOrders();
+        await fetchInventory();
+        await fetchNotifications();
+        
+        // Small delay before fetching secondary data
+        setTimeout(() => {
+          if (!abortController.signal.aborted) {
+            fetchExpectedDeliveries();
+            fetchMarketInventory();
+          }
+        }, 100);
+        
+        // Fetch non-critical data last
+        setTimeout(() => {
+          if (!abortController.signal.aborted) {
+            fetchBestSellingItems();
+            fetchStockAlerts();
+          }
+        }, 200);
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      }
+    };
+    
+    fetchInitialData();
+    
+    // Set up polling for real-time updates with longer intervals
+    const notificationInterval = setInterval(() => {
+      if (!abortController.signal.aborted) {
+        fetchNotifications();
+      }
+    }, 30000); // Changed from 5 seconds to 30 seconds
+    
+    const deliveryInterval = setInterval(() => {
+      if (!abortController.signal.aborted) {
+        fetchExpectedDeliveries();
+      }
+    }, 60000); // Changed from 30 seconds to 60 seconds
     
     return () => {
+      abortController.abort();
       clearInterval(notificationInterval);
       clearInterval(deliveryInterval);
     };
@@ -406,8 +440,8 @@ function VendorDashboard() {
           notes: form.notes,
           pickupLocation: 'Any Available Warehouse', // Pickup from warehouse
           goodsDescription: form.itemName,
-          requestedBy: user?.id || user?._id,
-          requesterType: 'vendor' // Mark as vendor request
+          requestedBy: user?._id || user?.id, // Use _id first since MongoDB uses _id
+          requesterType: 'market_vendor' // Correct enum value to match server schema
         };
         
         await axios.post("http://localhost:5000/api/deliveries", deliveryData, {
@@ -775,7 +809,7 @@ function VendorDashboard() {
               >
                 <option value="overview">📊 Overview</option>
                 <option value="orders">🛒 Orders</option>
-                <option value="inventory">📦 Available Items</option>
+                <option value="inventory">📦 Inventory</option>
                 <option value="deliveries">🚛 Deliveries</option>
                 <option value="market-inventory">🏪 Market Stock</option>
                 <option value="analytics">📈 Analytics</option>
@@ -791,7 +825,7 @@ function VendorDashboard() {
                 {[
                   { id: 'overview', label: 'Overview', icon: BarChart3, color: 'amber' },
                   { id: 'orders', label: 'Orders', icon: ShoppingCart, color: 'blue' },
-                  { id: 'inventory', label: 'Available Items', icon: Package, color: 'green' },
+                  { id: 'inventory', label: 'Inventory', icon: Package, color: 'green' },
                   { id: 'deliveries', label: 'Deliveries', icon: Truck, color: 'cyan' },
                   { id: 'market-inventory', label: 'Market Stock', icon: Store, color: 'emerald' },
                   { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'purple' },
@@ -824,7 +858,7 @@ function VendorDashboard() {
                   {[
                     { id: 'overview', label: 'Overview', shortLabel: 'Overview', icon: BarChart3, color: 'amber' },
                     { id: 'orders', label: 'Orders', shortLabel: 'Orders', icon: ShoppingCart, color: 'blue' },
-                    { id: 'inventory', label: 'Available Items', shortLabel: 'Items', icon: Package, color: 'green' },
+                    { id: 'inventory', label: 'Inventory', shortLabel: 'Inventory', icon: Package, color: 'green' },
                     { id: 'deliveries', label: 'Deliveries', shortLabel: 'Delivery', icon: Truck, color: 'cyan' }
                   ].map((tab) => {
                     const Icon = tab.icon;
@@ -1164,69 +1198,106 @@ function VendorDashboard() {
           </>
         )}
 
-        {/* Available Items Tab */}
+        {/* Inventory Tab */}
         {activeTab === 'inventory' && (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Package className="h-6 w-6 mr-2 text-green-600" />
-                Available Items to Order
-              </h2>
-              <p className="text-gray-600 mt-1">Browse available items from warehouses and farms</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50/70">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white/50 divide-y divide-gray-200">
-                  {(inventory || []).filter(Boolean).filter(item => item && item.itemName).length > 0 ? (
-                    (inventory || []).filter(Boolean).filter(item => item && item.itemName).map((item, index) => (
-                      <tr key={index} className="hover:bg-white/70 transition-colors">
+          <div className="space-y-6">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <Package className="h-6 w-6 mr-2 text-green-600" />
+                      Vendor Inventory
+                    </h2>
+                    <p className="text-gray-600 mt-1">Manage your current stock levels and product availability</p>
+                  </div>
+                  <button className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50/70">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Level</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white/50 divide-y divide-gray-200">
+                    {/* Display vendor's inventory - using marketInventory or simulated data */}
+                    {(marketInventory && marketInventory.length > 0 ? marketInventory : [
+                      { id: 1, itemName: 'Rice (Basmati)', quantity: 150, unit: 'kg', price: 80, status: 'available', threshold: 50 },
+                      { id: 2, itemName: 'Wheat Flour', quantity: 25, unit: 'kg', price: 45, status: 'low_stock', threshold: 30 },
+                      { id: 3, itemName: 'Tomatoes', quantity: 75, unit: 'kg', price: 60, status: 'available', threshold: 20 },
+                      { id: 4, itemName: 'Onions', quantity: 0, unit: 'kg', price: 40, status: 'out_of_stock', threshold: 15 }
+                    ]).map((item, index) => (
+                      <tr key={item.id || index} className="hover:bg-white/70 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Package className="h-8 w-8 text-green-600 mr-3" />
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{item.itemName}</div>
-                              <div className="text-sm text-gray-500">{item.description || 'No description'}</div>
+                              <div className="text-sm font-medium text-gray-900">{item.itemName || item.name}</div>
+                              <div className="text-sm text-gray-500">{item.description || `Alert at ${item.threshold || 10} ${item.unit}`}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.quantity} {item.unit}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{item.quantity || item.stock || 0} {item.unit}</div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                            <div 
+                              className={`h-2 rounded-full ${
+                                (item.quantity || item.stock || 0) === 0 ? 'bg-red-600' :
+                                (item.quantity || item.stock || 0) <= (item.threshold || 10) ? 'bg-yellow-600' :
+                                'bg-green-600'
+                              }`}
+                              style={{ width: `${Math.min(((item.quantity || item.stock || 0) / ((item.threshold || 10) * 3)) * 100, 100)}%` }}
+                            ></div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.location}
+                          ₹{item.price || 0}/{item.unit}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            (item.status === 'available' || (item.quantity || item.stock || 0) > (item.threshold || 10)) ? 'bg-green-100 text-green-800' :
+                            (item.status === 'low_stock' || (item.quantity || item.stock || 0) <= (item.threshold || 10) && (item.quantity || item.stock || 0) > 0) ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {(item.quantity || item.stock || 0) === 0 ? 'OUT OF STOCK' :
+                             (item.quantity || item.stock || 0) <= (item.threshold || 10) ? 'LOW STOCK' :
+                             'AVAILABLE'}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setForm({...form, itemName: item.itemName});
-                              setShowOrderModal(true);
-                            }}
-                            className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-4 py-2 rounded-lg hover:from-amber-600 hover:to-yellow-700 transition-all duration-200 flex items-center"
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-1" />
-                            Order
-                          </button>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => {
+                                setSelectedInventoryItem(item);
+                                setShowMarketInventoryModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="Edit Item"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="text-green-600 hover:text-green-900 transition-colors"
+                              title="Restock Item"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center">
-                        <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500">No items available</p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1569,9 +1640,9 @@ function VendorDashboard() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <a 
-                href={buildUrl("http://localhost:5000/api/export/orders")} 
+                href={buildUrl("http://localhost:5000/api/export/vendor/orders")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-amber-50 to-yellow-100 rounded-lg hover:from-amber-100 hover:to-yellow-200 transition-all duration-200 group text-center"
               >
                 <div>
@@ -1580,48 +1651,21 @@ function VendorDashboard() {
                 </div>
               </a>
               <a 
-                href={buildUrl("http://localhost:5000/api/export/orders/pdf")} 
+                href={buildUrl("http://localhost:5000/api/export/vendor/orders?format=xlsx")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 group text-center"
               >
                 <div>
                   <Download className="h-8 w-8 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-blue-700">Orders (PDF)</span>
+                  <span className="text-sm font-medium text-blue-700">Orders (Excel)</span>
                 </div>
               </a>
               <a 
-                href={buildUrl("http://localhost:5000/api/export/vendor/deliveries")} 
-                className="flex items-center justify-center p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-lg hover:from-cyan-100 hover:to-cyan-200 transition-all duration-200 group text-center"
-              >
-                <div>
-                  <Download className="h-8 w-8 text-cyan-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-cyan-700">Deliveries (CSV)</span>
-                </div>
-              </a>
-              <a 
-                href={buildUrl("http://localhost:5000/api/export/vendor/inventory")} 
-                className="flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg hover:from-emerald-100 hover:to-emerald-200 transition-all duration-200 group text-center"
-              >
-                <div>
-                  <Download className="h-8 w-8 text-emerald-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-emerald-700">Market Inventory (CSV)</span>
-                </div>
-              </a>
-              <a 
-                href="http://localhost:5000/api/export/vendor-summary" 
+                href={buildUrl("http://localhost:5000/api/export/vendor/orders?format=pdf")} 
                 className="flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-all duration-200 group text-center"
               >
                 <div>
                   <Download className="h-8 w-8 text-green-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-green-700">Summary (CSV)</span>
-                </div>
-              </a>
-              <a 
-                href={buildUrl("http://localhost:5000/api/export/vendor/stock-alerts")} 
-                className="flex items-center justify-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-lg hover:from-red-100 hover:to-red-200 transition-all duration-200 group text-center"
-              >
-                <div>
-                  <Download className="h-8 w-8 text-red-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-medium text-red-700">Stock Alerts (CSV)</span>
+                  <span className="text-sm font-medium text-green-700">Orders (PDF)</span>
                 </div>
               </a>
             </div>

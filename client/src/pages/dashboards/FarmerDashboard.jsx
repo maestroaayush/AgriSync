@@ -634,12 +634,13 @@ function FarmerDashboard() {
 
   // Export data functions using server-side endpoints
   const exportInventoryData = () => {
-    const baseUrl = buildUrl("http://localhost:5000/api/export/farmer/deliveries");
+    // Note: Backend doesn't have farmer/inventory endpoint yet, using deliveries for now
+    const baseUrl = buildUrl("http://localhost:5000/api/export/farmer/deliveries?format=csv");
     window.location.href = baseUrl;
   };
 
   const exportDeliveryData = () => {
-    const baseUrl = buildUrl("http://localhost:5000/api/export/farmer/deliveries");
+    const baseUrl = buildUrl("http://localhost:5000/api/export/farmer/deliveries?format=csv");
     window.location.href = baseUrl;
   };
 

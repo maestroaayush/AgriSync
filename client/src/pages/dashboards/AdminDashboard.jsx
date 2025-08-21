@@ -3531,43 +3531,59 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Farmer Information */}
+              {/* Requester Information (Farmer or Vendor) */}
               <div className="bg-white border rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Farmer Information
-                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    Location Available
+                  {selectedDelivery.requesterType === 'market_vendor' ? 'Vendor' : 'Farmer'} Information
+                  <span className={`ml-2 px-2 py-1 ${selectedDelivery.requesterType === 'market_vendor' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'} text-xs rounded-full`}>
+                    {selectedDelivery.requesterType === 'market_vendor' ? '🏪 Vendor' : '🌾 Farmer'}
                   </span>
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <label className="text-gray-600 font-medium">Name:</label>
-                    <p className="text-gray-900">{selectedDelivery.farmer?.name || selectedDelivery.farmerName || 'Unknown Farmer'}</p>
+                    <p className="text-gray-900">
+                      {selectedDelivery.farmer?.name || 
+                       selectedDelivery.vendor?.name || 
+                       selectedDelivery.requestedBy?.name || 
+                       selectedDelivery.farmerName || 
+                       'Unknown Requester'}
+                    </p>
                   </div>
                   <div>
                     <label className="text-gray-600 font-medium">Email:</label>
-                    <p className="text-gray-900 break-words">{selectedDelivery.farmer?.email || selectedDelivery.farmerEmail || 'N/A'}</p>
+                    <p className="text-gray-900 break-words">
+                      {selectedDelivery.farmer?.email || 
+                       selectedDelivery.vendor?.email || 
+                       selectedDelivery.requestedBy?.email || 
+                       selectedDelivery.farmerEmail || 
+                       'N/A'}
+                    </p>
                   </div>
-                  {selectedDelivery.farmer?.phone && (
+                  {(selectedDelivery.farmer?.phone || selectedDelivery.vendor?.phone || selectedDelivery.requestedBy?.phone) && (
                     <div>
                       <label className="text-gray-600 font-medium">Phone:</label>
-                      <p className="text-gray-900">{selectedDelivery.farmer.phone}</p>
+                      <p className="text-gray-900">
+                        {selectedDelivery.farmer?.phone || 
+                         selectedDelivery.vendor?.phone || 
+                         selectedDelivery.requestedBy?.phone}
+                      </p>
                     </div>
                   )}
                   <div>
                     <label className="text-gray-600 font-medium">Pickup Location:</label>
                     <p className="text-gray-900">{selectedDelivery.pickupLocation || selectedDelivery.location || 'Not specified'}</p>
                   </div>
-                  {/* Farmer Coordinates */}
-                  {selectedDelivery.farmer?.coordinates && (
+                  {/* Requester Coordinates */}
+                  {(selectedDelivery.farmer?.coordinates || selectedDelivery.vendor?.coordinates || selectedDelivery.requestedBy?.coordinates) && (
                     <div className="md:col-span-2">
                       <label className="text-gray-600 font-medium">📍 GPS Coordinates:</label>
                       <p className="text-gray-900 font-mono text-xs">
-                        Lat: {selectedDelivery.farmer.coordinates.latitude?.toFixed(6)}, 
-                        Lng: {selectedDelivery.farmer.coordinates.longitude?.toFixed(6)}
+                        Lat: {(selectedDelivery.farmer?.coordinates || selectedDelivery.vendor?.coordinates || selectedDelivery.requestedBy?.coordinates).latitude?.toFixed(6)}, 
+                        Lng: {(selectedDelivery.farmer?.coordinates || selectedDelivery.vendor?.coordinates || selectedDelivery.requestedBy?.coordinates).longitude?.toFixed(6)}
                       </p>
                     </div>
                   )}
@@ -3724,7 +3740,8 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Warehouse Selection */}
+              {/* Warehouse Selection - Only show for farmer deliveries */}
+              {selectedDelivery.requesterType !== 'market_vendor' && (
               <div className="bg-white border rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
                   <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3905,8 +3922,9 @@ function AdminDashboard() {
                   )}
                 </div>
               </div>
+              )}
 
-              {/* Delivery Scheduling */}
+              {/* Delivery Scheduling - Conditionally show based on requester type */}
               <div className="bg-white border rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
                   <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3915,7 +3933,8 @@ function AdminDashboard() {
                   Delivery Schedule (Optional)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Pickup Time Selection */}
+                  {/* Pickup Time Selection - Only show for farmer deliveries */}
+                  {selectedDelivery.requesterType !== 'market_vendor' ? (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Scheduled Pickup Time
@@ -3973,9 +3992,16 @@ function AdminDashboard() {
                       )}
                     </div>
                   </div>
+                  ) : (
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        🏪 <strong>Vendor Delivery:</strong> Pickup scheduling is not required for vendor deliveries as they manage their own pickup times.
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Delivery Time Selection */}
-                  <div>
+                  <div className={selectedDelivery.requesterType === 'market_vendor' ? 'md:col-span-2' : ''}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Expected Delivery Time
                     </label>
@@ -4087,7 +4113,7 @@ function AdminDashboard() {
               </button>
             <button
               onClick={() => handleAcceptDelivery(selectedDelivery._id || selectedDelivery.id)}
-              disabled={deliveryActionLoading === (selectedDelivery._id || selectedDelivery.id) || !selectedTransporterId || !selectedWarehouseId}
+              disabled={deliveryActionLoading === (selectedDelivery._id || selectedDelivery.id) || !selectedTransporterId || (selectedDelivery.requesterType !== 'market_vendor' && !selectedWarehouseId)}
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {deliveryActionLoading === (selectedDelivery._id || selectedDelivery.id) ? (
