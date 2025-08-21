@@ -115,6 +115,8 @@ function WarehouseDashboard() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showEditInventoryModal, setShowEditInventoryModal] = useState(false);
+  const [showDeleteInventoryModal, setShowDeleteInventoryModal] = useState(false);
   
   // Receipt confirmation states
   const [receiptForm, setReceiptForm] = useState({
@@ -125,6 +127,17 @@ function WarehouseDashboard() {
     receivedQuantity: ''
   });
   const [selectedDeliveryForReceipt, setSelectedDeliveryForReceipt] = useState(null);
+  
+  // Inventory edit/delete states
+  const [editingInventory, setEditingInventory] = useState(null);
+  const [editInventoryForm, setEditInventoryForm] = useState({
+    quantity: '',
+    reason: ''
+  });
+  const [deleteInventoryForm, setDeleteInventoryForm] = useState({
+    quantityToRemove: '',
+    reason: ''
+  });
   
   // Profile management states
   const [profileLoading, setProfileLoading] = useState(false);
@@ -153,16 +166,16 @@ function WarehouseDashboard() {
   const [inventoryFilter, setInventoryFilter] = useState('all');
   const [cropFilter, setCropFilter] = useState('all');
   const [deliveryFilter, setDeliveryFilter] = useState('all');
+  const user = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
+  
   const [newInventoryItem, setNewInventoryItem] = useState({
     itemName: '',
     quantity: '',
     unit: 'kg',
-    location: '',
+    location: user?.location || '',
     description: ''
   });
-
-  const user = JSON.parse(localStorage.getItem("user"));
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const COLORS = ["#60A5FA", "#F59E0B", "#34D399", "#F472B6", "#A78BFA"];
 
@@ -222,31 +235,35 @@ function WarehouseDashboard() {
   if (!user) return; // Wait for user to load
 
   if (user.role !== "warehouse_manager") {
-    navigate(`/${user.role || "login"}/dashboard`);
+    if (user?.role) {
+      navigate(`/${user.role}/dashboard`);
+    } else {
+      navigate("/");
+    }
     return;
   }
 
-  // Load essential data only to avoid resource exhaustion
+  // Load essential data
   fetchInventory();
   fetchDeliveries();
   fetchLogs();
+  fetchWarehouseInfo(); // Enable to get capacity data
+  fetchWarehouseMetrics(); // Enable to get warehouse metrics
   
-  // Disable problematic endpoints that cause ERR_INSUFFICIENT_RESOURCES
-  // fetchWarehouseInfo(); // Commented out - causing resource issues
-  // fetchInventoryTrends(); // Commented out - endpoint doesn't exist
-  // fetchWarehouseMetrics(); // Commented out - endpoint doesn't exist  
-  // fetchCapacityTrends(); // Commented out - endpoint doesn't exist
-  // fetchNotifications(); // Commented out - causing resource issues
-  // fetchActiveDeliveries(); // Commented out - endpoint doesn't exist
+  // Optional data - can be enabled if needed
+  // fetchInventoryTrends();
+  // fetchCapacityTrends();
+  // fetchNotifications();
+  // fetchActiveDeliveries();
   
-  // Disable automatic refresh intervals to prevent resource exhaustion
+  // Disable automatic refresh to prevent resource exhaustion
   // const interval = setInterval(fetchNotifications, 30000);
   // const trackingInterval = setInterval(fetchActiveDeliveries, 60000);
   // return () => {
   //   clearInterval(interval);
   //   clearInterval(trackingInterval);
   // };
-}, [user]);
+}, [navigate]); // Remove user from dependencies to prevent infinite loop
 
   const fetchInventory = async () => {
     try {
@@ -284,24 +301,42 @@ function WarehouseDashboard() {
 
   const fetchWarehouseInfo = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/warehouse", {
+      // Use the correct endpoint path with 's' - warehouses
+      const res = await axios.get("http://localhost:5000/api/warehouses", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const match = res.data.find((w) => w.location === user.location);
-      setWarehouse(match);
+      if (match) {
+        setWarehouse(match);
+      } else {
+        // If no warehouse found for this location, set default values
+        console.warn("No warehouse found for location:", user.location);
+        setWarehouse({
+          location: user.location,
+          capacityLimit: 10000, // Default capacity
+          name: `${user.location} Warehouse`,
+          manager: user.name
+        });
+      }
     } catch (err) {
       if (err.response?.status === 404) {
         console.warn("Warehouse endpoint not found. Creating default warehouse data.");
         // Set default warehouse info for demo purposes
         setWarehouse({
           location: user.location,
-          capacityLimit: 1000, // Default capacity
+          capacityLimit: 10000, // Default capacity
           name: `${user.location} Warehouse`,
           manager: user.name
         });
       } else {
         console.error("Warehouse info failed", err);
-        setWarehouse(null);
+        // Still set default values to prevent UI errors
+        setWarehouse({
+          location: user.location,
+          capacityLimit: 10000, // Default capacity
+          name: `${user.location} Warehouse`,
+          manager: user.name
+        });
       }
     }
   };
@@ -469,7 +504,9 @@ function WarehouseDashboard() {
       setSelectedDeliveryForReceipt(null);
       fetchDeliveries();
       fetchInventory();
-      alert('Delivery confirmed and added to inventory!');
+      
+      // Show detailed inventory transfer feedback
+      alert(`✅ Delivery Receipt Confirmed Successfully!\n\n📦 Items: ${selectedDeliveryForReceipt.goodsDescription} (${receiptForm.receivedQuantity} ${receiptForm.unit})\n\n🔄 Inventory Transfer Completed:\n🌾 Farmer inventory: Items automatically removed from farm\n🏦 Your warehouse inventory: Items automatically added\n📝 Quality condition: ${receiptForm.condition}${receiptForm.qualityNotes ? `\n📋 Quality notes: ${receiptForm.qualityNotes}` : ''}\n\n📧 All parties have been notified of the receipt confirmation.\n\n🎉 Thank you for using AgriSync!`);
     } catch (err) {
       console.error("Failed to confirm delivery receipt", err);
       alert('Failed to confirm delivery receipt.');
@@ -507,7 +544,14 @@ function WarehouseDashboard() {
 
   const addInventoryItem = async () => {
     try {
-      await axios.post("http://localhost:5000/api/inventory", newInventoryItem, {
+      // Use the warehouse-specific endpoint for adding inventory
+      const itemData = {
+        ...newInventoryItem,
+        location: user.location, // Ensure location is set to user's location
+        reason: 'Manual addition by warehouse manager'
+      };
+      
+      await axios.post("http://localhost:5000/api/warehouse/inventory/add", itemData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShowAddModal(false);
@@ -515,13 +559,112 @@ function WarehouseDashboard() {
         itemName: '',
         quantity: '',
         unit: 'kg',
-        location: '',
+        location: user.location,
         description: ''
       });
       fetchInventory();
       fetchLogs();
+      alert('✅ Inventory item added successfully!');
     } catch (err) {
       console.error("Failed to add inventory item", err);
+      alert('Failed to add inventory item: ' + (err.response?.data?.message || err.message));
+    }
+  };
+  
+  // Edit inventory item (adjust quantity)
+  const handleEditInventory = (item) => {
+    setEditingInventory(item);
+    setEditInventoryForm({
+      quantity: item.quantity.toString(),
+      reason: ''
+    });
+    setShowEditInventoryModal(true);
+  };
+  
+  const updateInventoryQuantity = async () => {
+    if (!editingInventory || !editInventoryForm.reason) {
+      alert('Please provide a reason for the adjustment');
+      return;
+    }
+    
+    const currentQuantity = parseInt(editingInventory.quantity);
+    const newQuantity = parseInt(editInventoryForm.quantity);
+    const quantityChange = newQuantity - currentQuantity;
+    
+    if (quantityChange === 0) {
+      alert('No quantity change detected');
+      return;
+    }
+    
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/warehouse/inventory/${editingInventory._id}/adjust`,
+        {
+          quantityChange: quantityChange,
+          reason: editInventoryForm.reason
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setShowEditInventoryModal(false);
+      setEditingInventory(null);
+      setEditInventoryForm({ quantity: '', reason: '' });
+      fetchInventory();
+      fetchLogs();
+      
+      const action = quantityChange > 0 ? 'increased' : 'decreased';
+      alert(`✅ Inventory ${action} successfully!\n\nItem: ${editingInventory.itemName}\nChange: ${quantityChange > 0 ? '+' : ''}${quantityChange} ${editingInventory.unit}\nNew Quantity: ${newQuantity} ${editingInventory.unit}\nReason: ${editInventoryForm.reason}`);
+    } catch (err) {
+      console.error('Failed to update inventory quantity', err);
+      alert('Failed to update inventory quantity: ' + (err.response?.data?.message || err.message));
+    }
+  };
+  
+  // Delete/Remove inventory item
+  const handleDeleteInventory = (item) => {
+    setEditingInventory(item);
+    setDeleteInventoryForm({
+      quantityToRemove: item.quantity.toString(),
+      reason: ''
+    });
+    setShowDeleteInventoryModal(true);
+  };
+  
+  const removeInventoryItem = async () => {
+    if (!editingInventory || !deleteInventoryForm.reason) {
+      alert('Please provide a reason for removal');
+      return;
+    }
+    
+    const quantityToRemove = parseInt(deleteInventoryForm.quantityToRemove);
+    if (quantityToRemove <= 0) {
+      alert('Please enter a valid quantity to remove');
+      return;
+    }
+    
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/warehouse/inventory/${editingInventory._id}/remove`,
+        {
+          data: {
+            quantityToRemove: quantityToRemove < parseInt(editingInventory.quantity) ? quantityToRemove : null,
+            reason: deleteInventoryForm.reason
+          },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      setShowDeleteInventoryModal(false);
+      setEditingInventory(null);
+      setDeleteInventoryForm({ quantityToRemove: '', reason: '' });
+      fetchInventory();
+      fetchLogs();
+      
+      const isFullRemoval = quantityToRemove >= parseInt(editingInventory.quantity);
+      alert(`✅ Inventory ${isFullRemoval ? 'removed' : 'reduced'} successfully!\n\nItem: ${editingInventory.itemName}\nQuantity Removed: ${quantityToRemove} ${editingInventory.unit}\nReason: ${deleteInventoryForm.reason}`);
+    } catch (err) {
+      console.error('Failed to remove inventory', err);
+      alert('Failed to remove inventory: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -1201,13 +1344,29 @@ function WarehouseDashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
-                              <button className="text-blue-600 hover:text-blue-900 transition-colors">
+                              <button 
+                                onClick={() => {
+                                  setSelectedInventoryItem(item);
+                                  // You can add a view modal here if needed
+                                  alert(`Item Details:\n\nName: ${item.itemName}\nQuantity: ${item.quantity} ${item.unit}\nLocation: ${item.location}\nDescription: ${item.description || 'N/A'}`);
+                                }}
+                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                title="View Details"
+                              >
                                 <Eye className="h-4 w-4" />
                               </button>
-                              <button className="text-green-600 hover:text-green-900 transition-colors">
+                              <button 
+                                onClick={() => handleEditInventory(item)}
+                                className="text-green-600 hover:text-green-900 transition-colors"
+                                title="Adjust Quantity"
+                              >
                                 <Edit3 className="h-4 w-4" />
                               </button>
-                              <button className="text-red-600 hover:text-red-900 transition-colors">
+                              <button 
+                                onClick={() => handleDeleteInventory(item)}
+                                className="text-red-600 hover:text-red-900 transition-colors"
+                                title="Remove Item"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -1313,6 +1472,20 @@ function WarehouseDashboard() {
                             <MapPin className="h-4 w-4 mr-1" />
                             Track
                           </button>
+                        )}
+                        {delivery.status === 'delivered' && (
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => {
+                                // Show detailed delivery completion info with inventory transfer from warehouse perspective
+                                alert(`✅ Delivery Received Successfully!\n\n📦 Items: ${delivery.goodsDescription || delivery.itemName} (${delivery.quantity} units)\n\n🔄 Inventory Transfer Completed:\n🌾 Farmer inventory: Items automatically removed from farm\n🏦 Your warehouse inventory: Items automatically added\n\n📧 All parties have been notified of the completion.\n\n🎉 Thank you for using AgriSync!`);
+                              }}
+                              className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition flex items-center"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              View Details
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -2205,6 +2378,234 @@ function WarehouseDashboard() {
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Confirm Receipt & Add to Inventory
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Inventory Modal */}
+      <Modal 
+        isOpen={showEditInventoryModal} 
+        onClose={() => setShowEditInventoryModal(false)}
+        title="Adjust Inventory Quantity"
+        description="Modify the quantity of inventory item"
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-green-800 flex items-center">
+              <Edit3 className="h-5 w-5 mr-2" />
+              Adjust Inventory
+            </h2>
+          </div>
+          
+          {editingInventory && (
+            <>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-2">Item Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Item Name</p>
+                    <p className="font-medium">{editingInventory.itemName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Current Quantity</p>
+                    <p className="font-medium">{editingInventory.quantity} {editingInventory.unit}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Location</p>
+                    <p className="font-medium">{editingInventory.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Unit</p>
+                    <p className="font-medium">{editingInventory.unit}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Quantity <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={editInventoryForm.quantity}
+                    onChange={(e) => setEditInventoryForm({...editInventoryForm, quantity: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Enter new quantity"
+                    min="0"
+                  />
+                  {editInventoryForm.quantity && (
+                    <p className={`mt-1 text-sm ${
+                      parseInt(editInventoryForm.quantity) > parseInt(editingInventory.quantity) 
+                        ? 'text-green-600' 
+                        : parseInt(editInventoryForm.quantity) < parseInt(editingInventory.quantity)
+                        ? 'text-red-600'
+                        : 'text-gray-600'
+                    }`}>
+                      {parseInt(editInventoryForm.quantity) > parseInt(editingInventory.quantity) 
+                        ? `Increasing by ${parseInt(editInventoryForm.quantity) - parseInt(editingInventory.quantity)} ${editingInventory.unit}`
+                        : parseInt(editInventoryForm.quantity) < parseInt(editingInventory.quantity)
+                        ? `Decreasing by ${parseInt(editingInventory.quantity) - parseInt(editInventoryForm.quantity)} ${editingInventory.unit}`
+                        : 'No change in quantity'
+                      }
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reason for Adjustment <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={editInventoryForm.reason}
+                    onChange={(e) => setEditInventoryForm({...editInventoryForm, reason: e.target.value})}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Enter reason for adjustment (e.g., Stock count correction, Quality check, etc.)"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowEditInventoryModal(false);
+                setEditingInventory(null);
+                setEditInventoryForm({ quantity: '', reason: '' });
+              }}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={updateInventoryQuantity}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Update Quantity
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete/Remove Inventory Modal */}
+      <Modal 
+        isOpen={showDeleteInventoryModal} 
+        onClose={() => setShowDeleteInventoryModal(false)}
+        title="Remove Inventory Item"
+        description="Remove or reduce inventory quantity"
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-red-800 flex items-center">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Remove Inventory
+            </h2>
+          </div>
+          
+          {editingInventory && (
+            <>
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-red-900 mb-1">Warning</h3>
+                    <p className="text-red-700 text-sm">
+                      You are about to remove inventory. This action will be logged and cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-2">Item Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Item Name</p>
+                    <p className="font-medium">{editingInventory.itemName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Current Quantity</p>
+                    <p className="font-medium">{editingInventory.quantity} {editingInventory.unit}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Location</p>
+                    <p className="font-medium">{editingInventory.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Unit</p>
+                    <p className="font-medium">{editingInventory.unit}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity to Remove <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={deleteInventoryForm.quantityToRemove}
+                    onChange={(e) => setDeleteInventoryForm({...deleteInventoryForm, quantityToRemove: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Enter quantity to remove"
+                    min="1"
+                    max={editingInventory.quantity}
+                  />
+                  <p className="mt-1 text-sm text-gray-600">
+                    Enter {editingInventory.quantity} to remove entire item, or a smaller amount for partial removal.
+                  </p>
+                  {deleteInventoryForm.quantityToRemove && (
+                    <p className={`mt-1 text-sm font-medium ${
+                      parseInt(deleteInventoryForm.quantityToRemove) >= parseInt(editingInventory.quantity)
+                        ? 'text-red-600'
+                        : 'text-orange-600'
+                    }`}>
+                      {parseInt(deleteInventoryForm.quantityToRemove) >= parseInt(editingInventory.quantity)
+                        ? '⚠️ This will completely remove the item from inventory'
+                        : `Will leave ${parseInt(editingInventory.quantity) - parseInt(deleteInventoryForm.quantityToRemove)} ${editingInventory.unit} remaining`
+                      }
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reason for Removal <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={deleteInventoryForm.reason}
+                    onChange={(e) => setDeleteInventoryForm({...deleteInventoryForm, reason: e.target.value})}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Enter reason for removal (e.g., Damaged goods, Expired, Sold, etc.)"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowDeleteInventoryModal(false);
+                setEditingInventory(null);
+                setDeleteInventoryForm({ quantityToRemove: '', reason: '' });
+              }}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={removeInventoryItem}
+              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center shadow-lg"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Remove Inventory
             </button>
           </div>
         </div>

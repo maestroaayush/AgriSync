@@ -189,6 +189,7 @@ function AdminDashboard() {
   const [newWarehouse, setNewWarehouse] = useState({
     location: '',
     capacityLimit: '',
+    managerId: '',
     coordinates: { latitude: '', longitude: '' }
   });
   const [mapView, setMapView] = useState('users');
@@ -204,6 +205,9 @@ function AdminDashboard() {
   const [actionReason, setActionReason] = useState('');
   const [scheduledPickupTime, setScheduledPickupTime] = useState('');
   const [scheduledDeliveryTime, setScheduledDeliveryTime] = useState('');
+  // Temporary states for date/time selection with OK buttons
+  const [tempPickupTime, setTempPickupTime] = useState('');
+  const [tempDeliveryTime, setTempDeliveryTime] = useState('');
   const [deliveryActionLoading, setDeliveryActionLoading] = useState(null);
   const [warehouseDataLoading, setWarehouseDataLoading] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -399,6 +403,11 @@ function AdminDashboard() {
         capacityLimit: parseInt(newWarehouse.capacityLimit)
       };
 
+      // Add managerId to payload if provided
+      if (newWarehouse.managerId) {
+        payload.managerId = newWarehouse.managerId;
+      }
+
       if (newWarehouse.coordinates.latitude && newWarehouse.coordinates.longitude) {
         payload.coordinates = {
           latitude: parseFloat(newWarehouse.coordinates.latitude),
@@ -413,6 +422,7 @@ function AdminDashboard() {
       setNewWarehouse({
         location: '',
         capacityLimit: '',
+        managerId: '',
         coordinates: { latitude: '', longitude: '' }
       });
       setShowAddWarehouseModal(false);
@@ -775,7 +785,11 @@ function AdminDashboard() {
   useEffect(() => {
     document.title = "Admin Dashboard – AgriSync";
     if (user?.role !== "admin") {
-      navigate(`/${user?.role || "login"}/dashboard`);
+      if (user?.role) {
+        navigate(`/${user.role}/dashboard`);
+      } else {
+        navigate("/");
+      }
       return;
     }
     fetchUsers();
@@ -821,7 +835,11 @@ function AdminDashboard() {
   }, [activeTab, locationFilter]);
 
   const switchRole = (newRole) => {
-    navigate(`/${newRole}/dashboard`);
+    if (newRole) {
+      navigate(`/${newRole}/dashboard`);
+    } else {
+      navigate("/");
+    }
   };
 
   const roleCounts = users.reduce((acc, u) => {
@@ -3718,14 +3736,6 @@ function AdminDashboard() {
                   </span>
                 </h4>
                 
-                {/* Debug Info */}
-                <div className="mb-3 p-2 bg-gray-50 border rounded text-xs">
-                  <div className="text-gray-600">
-                    📊 Debug Info: Traditional Warehouses: {warehouses.length}, 
-                    Warehouse Managers: {usersWithLocations.filter(u => u.role === 'warehouse_manager' && u.hasCoordinates).length}, 
-                    Combined Total: {getCombinedWarehouses().length}
-                  </div>
-                </div>
                 
                 {/* Warehouse Free Space Overview */}
                 {warehouseFreeSpace.length > 0 && (
@@ -3905,33 +3915,126 @@ function AdminDashboard() {
                   Delivery Schedule (Optional)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Pickup Time Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Scheduled Pickup Time
                     </label>
-                    <input
-                      type="datetime-local"
-                      value={scheduledPickupTime}
-                      onChange={(e) => setScheduledPickupTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      min={new Date().toISOString().slice(0, 16)}
-                    />
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="datetime-local"
+                          value={tempPickupTime}
+                          onChange={(e) => setTempPickupTime(e.target.value)}
+                          onBlur={() => {
+                            // Auto-confirm when user finishes interacting with the datetime picker
+                            if (tempPickupTime && tempPickupTime !== scheduledPickupTime) {
+                              setTimeout(() => {
+                                setScheduledPickupTime(tempPickupTime);
+                                setTempPickupTime('');
+                              }, 100); // Small delay to ensure the value is set
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          min={new Date().toISOString().slice(0, 16)}
+                        />
+                        {tempPickupTime && tempPickupTime !== scheduledPickupTime && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScheduledPickupTime(tempPickupTime);
+                              setTempPickupTime('');
+                            }}
+                            className="absolute right-1 top-1 bottom-1 bg-blue-500 text-white px-2 rounded text-xs hover:bg-blue-600 transition-colors flex items-center justify-center"
+                            style={{ width: '60px' }}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {scheduledPickupTime && (
+                        <div className="bg-green-50 border border-green-200 rounded p-2">
+                          <p className="text-xs text-green-700">
+                            <strong>Confirmed:</strong> {new Date(scheduledPickupTime).toLocaleString()}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScheduledPickupTime('');
+                              setTempPickupTime('');
+                            }}
+                            className="text-xs text-red-600 hover:text-red-800 mt-1"
+                          >
+                            Clear selection
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Delivery Time Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Expected Delivery Time
                     </label>
-                    <input
-                      type="datetime-local"
-                      value={scheduledDeliveryTime}
-                      onChange={(e) => setScheduledDeliveryTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      min={scheduledPickupTime || new Date().toISOString().slice(0, 16)}
-                    />
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="datetime-local"
+                          value={tempDeliveryTime}
+                          onChange={(e) => setTempDeliveryTime(e.target.value)}
+                          onBlur={() => {
+                            // Auto-confirm when user finishes interacting with the datetime picker
+                            if (tempDeliveryTime && tempDeliveryTime !== scheduledDeliveryTime) {
+                              setTimeout(() => {
+                                setScheduledDeliveryTime(tempDeliveryTime);
+                                setTempDeliveryTime('');
+                              }, 100); // Small delay to ensure the value is set
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          min={scheduledPickupTime || new Date().toISOString().slice(0, 16)}
+                        />
+                        {tempDeliveryTime && tempDeliveryTime !== scheduledDeliveryTime && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScheduledDeliveryTime(tempDeliveryTime);
+                              setTempDeliveryTime('');
+                            }}
+                            className="absolute right-1 top-1 bottom-1 bg-blue-500 text-white px-2 rounded text-xs hover:bg-blue-600 transition-colors flex items-center justify-center"
+                            style={{ width: '60px' }}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {scheduledDeliveryTime && (
+                        <div className="bg-green-50 border border-green-200 rounded p-2">
+                          <p className="text-xs text-green-700">
+                            <strong>Confirmed:</strong> {new Date(scheduledDeliveryTime).toLocaleString()}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScheduledDeliveryTime('');
+                              setTempDeliveryTime('');
+                            }}
+                            className="text-xs text-red-600 hover:text-red-800 mt-1"
+                          >
+                            Clear selection
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 Setting specific times helps farmers and transporters plan better and receive accurate notifications.
+                  💡 Select a date and time, then click the OK button to confirm your selection. This helps farmers and transporters plan better and receive accurate notifications.
                 </p>
               </div>
 
@@ -4016,6 +4119,55 @@ function AdminDashboard() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Warehouse Manager *
+              </label>
+              <select
+                value={newWarehouse.managerId}
+                onChange={(e) => {
+                  const managerId = e.target.value;
+                  const selectedManager = users.find(u => u._id === managerId);
+                  
+                  if (selectedManager && selectedManager.coordinates) {
+                    setNewWarehouse({
+                      ...newWarehouse,
+                      managerId,
+                      location: selectedManager.location || '',
+                      coordinates: {
+                        latitude: selectedManager.coordinates.latitude?.toString() || '',
+                        longitude: selectedManager.coordinates.longitude?.toString() || ''
+                      }
+                    });
+                  } else {
+                    setNewWarehouse({
+                      ...newWarehouse,
+                      managerId,
+                      location: selectedManager?.location || '',
+                      coordinates: { latitude: '', longitude: '' }
+                    });
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">-- Select a warehouse manager --</option>
+                {users
+                  .filter(u => u.role === 'warehouse_manager' && u.approved)
+                  .map((manager) => (
+                    <option key={manager._id} value={manager._id}>
+                      {manager.name} - {manager.location || 'No location set'}
+                      {manager.coordinates ? ' ✓' : ' (No coordinates)'}
+                    </option>
+                  ))
+                }
+              </select>
+              {users.filter(u => u.role === 'warehouse_manager' && u.approved).length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">
+                  ⚠️ No approved warehouse managers found. Please ensure warehouse managers are registered and approved.
+                </p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Warehouse Location *
               </label>
               <input
@@ -4024,7 +4176,13 @@ function AdminDashboard() {
                 onChange={(e) => setNewWarehouse({...newWarehouse, location: e.target.value})}
                 placeholder="Enter warehouse location (e.g., Mumbai Central Warehouse)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                readOnly={newWarehouse.managerId}
               />
+              {newWarehouse.managerId && (
+                <p className="text-xs text-blue-600 mt-1">
+                  📍 Location auto-populated from selected manager
+                </p>
+              )}
             </div>
             
             <div>
@@ -4043,7 +4201,7 @@ function AdminDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Latitude (Optional)
+                  Latitude {newWarehouse.managerId ? '' : '(Optional)'}
                 </label>
                 <input
                   type="number"
@@ -4055,11 +4213,12 @@ function AdminDashboard() {
                   })}
                   placeholder="e.g., 19.0760"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  readOnly={newWarehouse.managerId}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Longitude (Optional)
+                  Longitude {newWarehouse.managerId ? '' : '(Optional)'}
                 </label>
                 <input
                   type="number"
@@ -4071,14 +4230,20 @@ function AdminDashboard() {
                   })}
                   placeholder="e.g., 72.8777"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  readOnly={newWarehouse.managerId}
                 />
               </div>
             </div>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-xs text-blue-700">
-                <strong>Note:</strong> Coordinates are optional but recommended for accurate location tracking and delivery routing.
+                <strong>📍 Manager Selection:</strong> When you select a warehouse manager, their location and coordinates will be automatically used for the warehouse.
               </p>
+              {!newWarehouse.managerId && (
+                <p className="text-xs text-blue-700 mt-1">
+                  <strong>💡 Tip:</strong> You can also manually enter coordinates if no manager is selected.
+                </p>
+              )}
             </div>
           </div>
           

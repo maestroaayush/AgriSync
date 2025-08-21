@@ -29,19 +29,52 @@ router.post('/', protect, allowRoles('farmer', 'warehouse_manager'), async (req,
     // Check if warehouse has capacity set (more flexible for testing)
     let warehouse = await Warehouse.findOne({ location });
     
-    // If warehouse doesn't exist, create a default one for testing
+    // If warehouse doesn't exist, try to find a warehouse manager for this location
     if (!warehouse) {
-      console.log(`Creating default warehouse for location: ${location}`);
-      warehouse = new Warehouse({
+      console.log(`Looking for warehouse manager or creating default warehouse for location: ${location}`);
+      
+      // Try to find a warehouse manager user for this location
+      const User = require('../models/user');
+      const warehouseManager = await User.findOne({ 
+        role: 'warehouse_manager', 
         location: location,
-        capacityLimit: 50000 // Default capacity
+        approved: true 
       });
+      
+      if (warehouseManager) {
+        // Create warehouse with the found manager
+        warehouse = new Warehouse({
+          location: location,
+          capacityLimit: 50000, // Default capacity
+          manager: warehouseManager._id,
+          isManuallyAdded: false // Auto-created
+        });
+      } else {
+        // No warehouse manager found - create a standalone warehouse for farmer's personal storage
+        // Find any admin user to assign as temporary manager
+        const adminUser = await User.findOne({ role: 'admin' });
+        if (!adminUser) {
+          return res.status(400).json({ 
+            message: `No warehouse available for location "${location}". Please contact admin to set up a warehouse manager for this location, or use an existing warehouse location.` 
+          });
+        }
+        
+        warehouse = new Warehouse({
+          location: location,
+          capacityLimit: 50000, // Default capacity
+          manager: adminUser._id, // Temporarily assign admin as manager
+          isManuallyAdded: false // Auto-created
+        });
+      }
+      
       try {
         await warehouse.save();
-        console.log(`✅ Created warehouse: ${location}`);
+        console.log(`✅ Created warehouse: ${location} with manager: ${warehouseManager?.name || 'Admin (temporary)'}`);
       } catch (err) {
         console.error('Error creating warehouse:', err);
-        return res.status(500).json({ message: 'Error setting up warehouse location' });
+        return res.status(500).json({ 
+          message: 'Error setting up warehouse location. Please ensure you are using a valid warehouse location or contact admin.' 
+        });
       }
     }
 

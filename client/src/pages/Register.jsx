@@ -12,7 +12,8 @@ function Register({ embed = false, onClose, onSwitchToLogin }) {
     password: "",
     phone: "",
     role: "farmer",
-    location: ""
+    location: "",
+    capacityLimit: ""
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -76,6 +77,15 @@ function Register({ embed = false, onClose, onSwitchToLogin }) {
       setError("Password must be at least 6 characters long");
       setLoading(false);
       return;
+    }
+    
+    // Validate capacity limit for warehouse managers
+    if (form.role === 'warehouse_manager') {
+      if (!form.capacityLimit || isNaN(form.capacityLimit) || parseFloat(form.capacityLimit) <= 0) {
+        setError("Please enter a valid capacity limit for your warehouse (in kg)");
+        setLoading(false);
+        return;
+      }
     }
     
     try {
@@ -304,6 +314,24 @@ function Register({ embed = false, onClose, onSwitchToLogin }) {
             className={`w-full px-3 py-2 border rounded ${error && 'border-red-500'}`}
             required
           />
+          {form.role === 'warehouse_manager' && (
+            <>
+              <input
+                type="number"
+                name="capacityLimit"
+                value={form.capacityLimit}
+                onChange={handleChange}
+                placeholder="Warehouse Capacity Limit (kg)"
+                className={`w-full px-3 py-2 border rounded ${error && 'border-red-500'}`}
+                min="0"
+                step="0.1"
+                required
+              />
+              <p className="text-xs text-gray-500 -mt-2">
+                Enter the maximum storage capacity of your warehouse in kilograms
+              </p>
+            </>
+          )}
           <button
             type="submit"
             disabled={loading}

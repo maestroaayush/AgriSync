@@ -365,7 +365,11 @@ function VendorDashboard() {
   useEffect(() => {
     document.title = "Vendor Dashboard – AgriSync";
     if (user?.role !== "market_vendor") {
-      navigate(`/${user?.role || "login"}/dashboard`);
+      if (user?.role) {
+        navigate(`/${user.role}/dashboard`);
+      } else {
+        navigate("/");
+      }
       return;
     }
     
@@ -398,9 +402,9 @@ function VendorDashboard() {
           quantity: parseInt(form.quantity),
           unit: form.unit,
           urgency: form.urgency,
-          destination: form.destination || 'Any Available Warehouse',
+          destination: user?.location || 'Market Location', // Always use vendor's location as destination
           notes: form.notes,
-          pickupLocation: user?.location || 'Market Location',
+          pickupLocation: 'Any Available Warehouse', // Pickup from warehouse
           goodsDescription: form.itemName,
           requestedBy: user?.id || user?._id,
           requesterType: 'vendor' // Mark as vendor request
@@ -439,21 +443,28 @@ function VendorDashboard() {
   };
 
   const switchRole = (newRole) => {
-    navigate(`/${newRole}/dashboard`);
+    if (newRole) {
+      navigate(`/${newRole}/dashboard`);
+    } else {
+      navigate("/");
+    }
   };
 
-  const orderSummary = orders.reduce((acc, order) => {
-    acc[order.itemName] = (acc[order.itemName] || 0) + order.quantity;
+  // Guard against non-array values
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  const orderSummary = safeOrders.reduce((acc, order) => {
+    acc[order.itemName] = (acc[order.itemName] || 0) + (order.quantity || 0);
     return acc;
   }, {});
 
   // Calculate order statistics
   const orderStats = {
-    total: (orders || []).length,
-    pending: (orders || []).filter(order => order.status === 'pending').length,
-    completed: (orders || []).filter(order => order.status === 'completed').length,
-    canceled: (orders || []).filter(order => order.status === 'canceled').length,
-    totalQuantity: (orders || []).reduce((sum, order) => sum + (order.quantity || 0), 0)
+    total: safeOrders.length,
+    pending: safeOrders.filter(order => order.status === 'pending').length,
+    completed: safeOrders.filter(order => order.status === 'completed').length,
+    canceled: safeOrders.filter(order => order.status === 'canceled').length,
+    totalQuantity: safeOrders.reduce((sum, order) => sum + (order.quantity || 0), 0)
   };
 
   // Get order status distribution for charts
@@ -1658,20 +1669,21 @@ function VendorDashboard() {
           {/* Item Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-            <select
+            <input
+              type="text"
               name="itemName"
               value={form.itemName}
               onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              placeholder="Enter item name (e.g., Tomatoes, Rice, Wheat)"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               required
-            >
-              <option value="" disabled>Select item</option>
-              {(inventory || []).filter(Boolean).filter(inv => inv && inv.itemName).map((inv) => (
-                <option key={inv._id || inv.itemName} value={inv.itemName}>
-                  {inv.itemName}
-                </option>
-              ))}
-            </select>
+            />
+            {/* Optional: Show suggestions from inventory if needed */}
+            {inventory && inventory.length > 0 && form.itemName && (
+              <div className="mt-1 text-xs text-gray-500">
+                💡 Available in inventory: {inventory.filter(inv => inv?.itemName?.toLowerCase().includes(form.itemName.toLowerCase())).slice(0, 3).map(inv => inv.itemName).join(', ')}
+              </div>
+            )}
           </div>
 
           {/* Quantity and Unit */}
@@ -1723,17 +1735,6 @@ function VendorDashboard() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                <input
-                  type="text"
-                  name="destination"
-                  value={form.destination}
-                  onChange={(e) => setForm({ ...form, destination: e.target.value })}
-                  placeholder="Destination (optional - defaults to your market location)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>

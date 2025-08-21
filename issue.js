@@ -1,7 +1,11 @@
-<select class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/70"><option value="all">All Units</option><option value="kg">Kilograms</option></select>
+VendorDashboard.jsx:420 
+ POST http://localhost:5000/api/orders 400 (Bad Request)
 
-<select class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70"><option value="all">All Crops</option><option value="Barley">Barley</option><option value="Corn">Corn</option><option value="Potatoes">Potatoes</option><option value="Rice">Rice</option><option value="Soybeans">Soybeans</option><option value="Tomatoes">Tomatoes</option><option value="Wheat">Wheat</option></select>
+VendorDashboard.jsx:439 Failed to submit request 
+AxiosError {message: 'Request failed with status code 400', name: 'AxiosError', code: 'ERR_BAD_REQUEST', config: {…}, request: XMLHttpRequest, …}
+VendorDashboard.jsx:413 
+ POST http://localhost:5000/api/deliveries 500 (Internal Server Error)
+VendorDashboard.jsx:439 Failed to submit request 
+AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+﻿
 
-<button class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus h-5 w-5 mr-2" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Add Item</button>
-
-<select class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70"><option value="all">All Status</option><option value="pending">Pending</option><option value="requested">Requested</option><option value="assigned">Assigned</option><option value="in_transit">In Transit</option><option value="delivered">Delivered</option><option value="rejected">Rejected</option></select>

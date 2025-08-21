@@ -1,5 +1,13 @@
+nohup: ignoring input
 
 > server@1.0.0 start
 > node server.js
 
-Server running on port 5000
+🧪 Development mode: Rate limit reset endpoint available at /api/dev/reset-rate-limit
+✅ MongoDB connected successfully
+✅ Audit log scheduled cleanup started (every 2 hours)
+✅ Audit service initialized with automatic cleanup
+🚀 Server running on port 5000
+🔗 API Documentation: http://localhost:5000/api-docs
+💻 Environment: development
+Killed

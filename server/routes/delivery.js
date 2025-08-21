@@ -147,7 +147,9 @@ router.get('/', protect, async (req, res) => {
 
   // Farmers see their own requests
   if (req.user.role === 'farmer') {
-    const deliveries = await Delivery.find({ farmer: req.user.id });
+    const deliveries = await Delivery.find({ farmer: req.user.id })
+      .populate('transporter', 'name email')
+      .sort({ updatedAt: -1, createdAt: -1 });
     return res.json(deliveries);
   }
 
@@ -164,7 +166,9 @@ router.get('/', protect, async (req, res) => {
 
   // Warehouse managers can see all deliveries
   if (req.user.role === 'warehouse_manager') {
-    const deliveries = await Delivery.find({});
+    const deliveries = await Delivery.find({})
+      .populate('farmer vendor transporter', 'name email location')
+      .sort({ updatedAt: -1, createdAt: -1 });
     return res.json(deliveries);
   }
 
@@ -245,9 +249,25 @@ router.put('/:id/status', protect, async (req, res) => {
     const delivery = await Delivery.findById(req.params.id);
     if (!delivery) return res.status(404).json({ message: 'Delivery not found' });
 
+    // Validate essential delivery data
+    if (!delivery.goodsDescription || !delivery.quantity || delivery.quantity <= 0) {
+      console.error('❌ Invalid delivery data:', {
+        id: delivery._id,
+        goodsDescription: delivery.goodsDescription,
+        quantity: delivery.quantity
+      });
+      return res.status(400).json({ 
+        message: 'Invalid delivery data: missing goods description or quantity',
+        details: {
+          goodsDescription: !delivery.goodsDescription ? 'missing' : 'present',
+          quantity: !delivery.quantity ? 'missing' : delivery.quantity <= 0 ? 'invalid' : 'valid'
+        }
+      });
+    }
+
     // Allow transporters, farmers, and admins to update status
     const canUpdate = (req.user.role === 'transporter' && delivery.transporter?.toString() === req.user.id) ||
-                     (req.user.role === 'farmer' && delivery.farmer.toString() === req.user.id) ||
+                     (req.user.role === 'farmer' && delivery.farmer?.toString() === req.user.id) ||
                      (req.user.role === 'admin');
     
     if (!canUpdate) {
@@ -272,53 +292,237 @@ router.put('/:id/status', protect, async (req, res) => {
       previousStatus: oldStatus
     });
     
-    // If status is changed to 'delivered', automatically add to warehouse inventory
+    // If status is changed to 'delivered', automatically manage inventory
     if (status === 'delivered' && oldStatus !== 'delivered') {
-      console.log('🏭 Auto-adding delivery to warehouse inventory using smart warehouse service...');
+      console.log('🔄 Auto-managing delivery inventory using smart warehouse service...');
       
       try {
         // Set delivery as completed
         delivery.actualDeliveryTime = new Date();
-        delivery.receivedByWarehouse = true;
-        delivery.warehouseReceivedAt = new Date();
         
-        // Use the new smart warehouse service to add inventory
-        const inventoryItem = await WarehouseService.addDeliveryToWarehouseInventory(
-          delivery, 
-          delivery.dropoffLocation,
-          req.user // transporter who delivered
-        );
+        // Check if WarehouseService methods are available before calling them
+        let isFromWarehouse = false;
+        let isToWarehouse = false;
         
-        console.log('✅ Inventory item created using warehouse service:', inventoryItem._id);
-        
-        // Notify warehouse manager about the incoming delivery
-        const warehouseManager = await WarehouseService.getWarehouseManager(delivery.dropoffLocation);
-        if (warehouseManager) {
-          await NotificationService.general(
-            warehouseManager._id,
-            '📦 New Delivery Received',
-            `Delivery of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered to ${delivery.dropoffLocation}. Added to inventory automatically.`,
-            'success'
-          );
+        try {
+          // Validate locations exist before checking warehouse status
+          if (!delivery.pickupLocation) {
+            console.warn('⚠️ Missing pickup location, defaulting to non-warehouse');
+          }
+          if (!delivery.dropoffLocation) {
+            console.warn('⚠️ Missing dropoff location, defaulting to non-warehouse');
+          }
+          
+          isFromWarehouse = delivery.pickupLocation ? await WarehouseService.isWarehouseLocation(delivery.pickupLocation) : false;
+          isToWarehouse = delivery.dropoffLocation ? await WarehouseService.isWarehouseLocation(delivery.dropoffLocation) : false;
+        } catch (warehouseCheckError) {
+          console.warn('⚠️ Warehouse location check failed, skipping automatic inventory management:', warehouseCheckError.message);
+          // Continue without warehouse checks - delivery can still be marked as completed
         }
         
-        // Notify admins about successful delivery completion
+        const isToVendor = delivery.vendor || delivery.requesterType === 'market_vendor';
+        
+        if (isFromWarehouse && isToVendor) {
+          // Warehouse to vendor delivery: remove from warehouse, add to vendor
+          console.log('🏦➡️🏪 Warehouse to vendor delivery detected');
+          
+          try {
+            await WarehouseService.removeDeliveryFromWarehouseInventory(
+              delivery,
+              delivery.pickupLocation,
+              req.user // transporter who delivered
+            );
+            
+            delivery.receivedByWarehouse = false;
+            delivery.deliveredToVendor = true;
+            delivery.vendorReceivedAt = new Date();
+            
+            console.log('✅ Successfully transferred inventory from warehouse to vendor');
+            
+            // Notify vendor about the delivery
+            if (delivery.vendor) {
+              await NotificationService.general(
+                delivery.vendor,
+                '🏪 Delivery Received',
+                `Your order of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered and added to your inventory.`,
+                'success'
+              );
+            }
+          } catch (warehouseInventoryError) {
+            console.error('❌ Failed to manage warehouse inventory (non-critical):', warehouseInventoryError);
+            // Mark delivery as completed even if inventory management fails
+            delivery.receivedByWarehouse = false;
+            delivery.deliveredToVendor = true;
+            delivery.vendorReceivedAt = new Date();
+          }
+          
+        } else if (isToWarehouse || (!isFromWarehouse && !isToVendor)) {
+          // Farmer to warehouse delivery: remove from farmer inventory and add to warehouse inventory
+          console.log('🌾➡️🏦 Farmer to warehouse delivery detected');
+          
+          // Step 1: Remove items from farmer's inventory
+          let farmerInventoryResult = null;
+          if (delivery.farmer) {
+            try {
+              farmerInventoryResult = await WarehouseService.removeDeliveryFromFarmerInventory(
+                delivery,
+                req.user // transporter who delivered
+              );
+              
+              console.log('✅ Farmer inventory updated:', {
+                totalRemoved: farmerInventoryResult.totalRemoved,
+                removedItems: farmerInventoryResult.removedItems.length,
+                updatedItems: farmerInventoryResult.updatedItems.length,
+                partialRemoval: farmerInventoryResult.partialRemoval
+              });
+            } catch (farmerInventoryError) {
+              console.error('❌ Failed to remove from farmer inventory (non-critical):', farmerInventoryError);
+              // Don't fail the entire operation - farmer inventory may not be perfectly tracked
+              farmerInventoryResult = {
+                warning: 'Failed to update farmer inventory',
+                error: farmerInventoryError.message
+              };
+            }
+          }
+          
+          // Step 2: Add items to warehouse inventory
+          let inventoryItem = null;
+          try {
+            inventoryItem = await WarehouseService.addDeliveryToWarehouseInventory(
+              delivery, 
+              delivery.dropoffLocation,
+              req.user // transporter who delivered
+            );
+            
+            delivery.receivedByWarehouse = true;
+            delivery.warehouseReceivedAt = new Date();
+            delivery.farmerInventoryUpdated = !!farmerInventoryResult && !farmerInventoryResult.error;
+            
+            console.log('✅ Inventory transfer completed:', {
+              warehouseItemCreated: inventoryItem._id,
+              farmerInventoryUpdated: delivery.farmerInventoryUpdated
+            });
+          } catch (warehouseInventoryError) {
+            console.error('❌ Failed to add to warehouse inventory (non-critical):', warehouseInventoryError);
+            // Mark delivery as completed even if warehouse inventory management fails
+            delivery.receivedByWarehouse = false; // Flag for manual processing
+            delivery.warehouseReceivedAt = new Date();
+            delivery.farmerInventoryUpdated = !!farmerInventoryResult && !farmerInventoryResult.error;
+          }
+          
+          // Emit Socket.IO events for real-time inventory updates
+          const io = req.app.get('io');
+          if (io) {
+            // Notify farmer about inventory decrease
+            if (delivery.farmer && farmerInventoryResult && farmerInventoryResult.totalRemoved > 0) {
+              io.emit('inventory_updated', {
+                userId: delivery.farmer,
+                type: 'farmer_inventory_decreased',
+                itemName: delivery.goodsDescription,
+                quantityChanged: -farmerInventoryResult.totalRemoved,
+                deliveryId: delivery._id,
+                timestamp: new Date()
+              });
+              console.log('📡 Farmer inventory update event emitted');
+            }
+            
+            // Notify warehouse manager about inventory increase
+            let warehouseManager = null;
+            try {
+              warehouseManager = await WarehouseService.getWarehouseManager(delivery.dropoffLocation);
+            } catch (managerLookupError) {
+              console.warn('⚠️ Failed to get warehouse manager:', managerLookupError.message);
+            }
+            if (warehouseManager && inventoryItem) {
+              io.emit('inventory_updated', {
+                userId: warehouseManager._id,
+                type: 'warehouse_inventory_increased',
+                itemName: delivery.goodsDescription,
+                quantityChanged: delivery.quantity,
+                location: delivery.dropoffLocation,
+                inventoryItemId: inventoryItem._id,
+                deliveryId: delivery._id,
+                timestamp: new Date()
+              });
+              console.log('📡 Warehouse inventory update event emitted');
+            }
+            
+            // Broadcast general inventory update for dashboards
+            io.emit('delivery_completed', {
+              deliveryId: delivery._id,
+              status: 'delivered',
+              inventoryTransfer: {
+                farmerInventoryUpdated: delivery.farmerInventoryUpdated,
+                warehouseInventoryCreated: !!inventoryItem,
+                itemName: delivery.goodsDescription,
+                quantity: delivery.quantity,
+                location: delivery.dropoffLocation
+              },
+              timestamp: new Date()
+            });
+            console.log('📡 Delivery completed event emitted');
+          }
+          
+          // Notify farmer about successful delivery with inventory details
+          if (delivery.farmer) {
+            let farmerMessage = `Your delivery of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been successfully delivered to ${delivery.dropoffLocation}.`;
+            
+            if (farmerInventoryResult && farmerInventoryResult.totalRemoved > 0) {
+              farmerMessage += ` Your inventory has been automatically updated - ${farmerInventoryResult.totalRemoved} units removed from your stock.`;
+            } else if (farmerInventoryResult && farmerInventoryResult.warning) {
+              farmerMessage += ` Note: Inventory tracking may need manual verification.`;
+            }
+            
+            await NotificationService.general(
+              delivery.farmer,
+              '✅ Delivery Completed',
+              farmerMessage,
+              'success'
+            );
+          }
+          
+          // Notify warehouse manager about the incoming delivery
+          try {
+            const warehouseManager = await WarehouseService.getWarehouseManager(delivery.dropoffLocation);
+            if (warehouseManager) {
+              await NotificationService.general(
+                warehouseManager._id,
+                '📦 New Delivery Received',
+                `Delivery of ${delivery.goodsDescription} (${delivery.quantity} ${delivery.unit || 'units'}) has been delivered to ${delivery.dropoffLocation}. Added to inventory automatically.`,
+                'success'
+              );
+            }
+          } catch (managerNotifyError) {
+            console.warn('⚠️ Failed to notify warehouse manager:', managerNotifyError.message);
+            // Continue - notification failure shouldn't break the delivery flow
+          }
+        }
+        
+        // Notify admins about successful delivery completion with inventory transfer details
         const admins = await User.find({ role: 'admin' }).select('_id');
         for (const admin of admins) {
+          const deliveryType = isFromWarehouse && isToVendor ? 'warehouse-to-vendor' : 'farmer-to-warehouse';
+          let adminMessage = `${deliveryType} delivery ${delivery._id} (${delivery.goodsDescription}) has been successfully completed with automatic inventory management.`;
+          
+          if (deliveryType === 'farmer-to-warehouse') {
+            adminMessage += ` Items removed from farmer inventory and added to warehouse.`;
+          }
+          
           await NotificationService.general(
             admin._id,
             '✅ Delivery Completed',
-            `Delivery ${delivery._id} (${delivery.goodsDescription}) has been successfully delivered and added to inventory at ${delivery.dropoffLocation}.`,
+            adminMessage,
             'success'
           );
         }
         
       } catch (inventoryError) {
-        console.error('❌ Failed to auto-add to inventory using warehouse service:', inventoryError);
+        console.error('❌ Failed to auto-manage inventory using warehouse service:', inventoryError);
         
         // Still mark as delivered but flag for manual inventory addition
         delivery.actualDeliveryTime = new Date();
         delivery.receivedByWarehouse = false; // Flag for manual processing
+        delivery.farmerInventoryUpdated = false;
         
         // Create notification for admin about the failure
         try {
@@ -327,7 +531,7 @@ router.put('/:id/status', protect, async (req, res) => {
             await NotificationService.general(
               admin._id,
               '⚠️ Auto-Inventory Failed',
-              `Delivery ${delivery._id} (${delivery.goodsDescription}) delivered but failed to auto-add to inventory at ${delivery.dropoffLocation}. Manual intervention required.`,
+              `Delivery ${delivery._id} (${delivery.goodsDescription}) delivered but failed to auto-manage inventory. Manual intervention required. Error: ${inventoryError.message}`,
               'warning'
             );
           }
@@ -355,26 +559,29 @@ router.put('/:id/status', protect, async (req, res) => {
     // Create notification and send email for status change using NotificationService
     const { sendDeliveryStatusUpdateEmail } = require('../utils/emailService');
     
-    const recipientId = req.user.role === 'transporter' ? delivery.farmer : delivery.transporter;
+    const recipientId = req.user.role === 'transporter' 
+      ? (delivery.farmer || delivery.vendor || delivery.requestedBy)
+      : delivery.transporter;
     
     if (recipientId) {
       // Create status update notification
-      if (status === 'in_transit') {
-        await NotificationService.deliveryInTransit(delivery.farmer, {
+      const actualRecipientId = delivery.farmer || delivery.vendor || delivery.requestedBy;
+      if (status === 'in_transit' && actualRecipientId) {
+        await NotificationService.deliveryInTransit(actualRecipientId, {
           deliveryId: delivery._id,
           itemName: delivery.goodsDescription,
           quantity: delivery.quantity,
           expectedDelivery: 'within 24-48 hours'
         });
-      } else if (status === 'delivered') {
-        await NotificationService.deliveryCompleted(delivery.farmer, {
+      } else if (status === 'delivered' && actualRecipientId) {
+        await NotificationService.deliveryCompleted(actualRecipientId, {
           deliveryId: delivery._id,
           itemName: delivery.goodsDescription,
           quantity: delivery.quantity,
           unit: 'units',
           destination: delivery.dropoffLocation
         });
-      } else {
+      } else if (recipientId) {
         // For other status updates, create a generic notification
         await NotificationService.general(
           recipientId,
@@ -403,7 +610,7 @@ router.put('/:id/status', protect, async (req, res) => {
             },
             oldStatus,
             status,
-            updater.name
+            updater?.name || 'System'
           );
           
           if (statusUpdateResult.success) {
@@ -425,41 +632,87 @@ router.put('/:id/status', protect, async (req, res) => {
 
 // Warehouse manager confirms receipt
 router.put('/:id/confirm-receipt', protect, async (req, res) => {
-  if (req.user.role !== 'warehouse_manager') {
-    return res.status(403).json({ message: 'Only warehouse managers can confirm delivery receipt' });
+  try {
+    if (req.user.role !== 'warehouse_manager') {
+      return res.status(403).json({ message: 'Only warehouse managers can confirm delivery receipt' });
+    }
+
+    const { unit, location, qualityNotes, condition, receivedQuantity } = req.body;
+    if (!unit || !location) {
+      return res.status(400).json({ message: 'Unit and location are required' });
+    }
+
+    const delivery = await Delivery.findById(req.params.id);
+    if (!delivery) return res.status(404).json({ message: 'Delivery not found' });
+
+    // Check if the delivery has already been received by the warehouse (auto-processed)
+    let inventoryItem;
+    let message;
+
+    if (delivery.receivedByWarehouse) {
+      // Delivery already processed by the automatic flow
+      message = 'Delivery receipt confirmed (already added to inventory)';
+      
+      // Find the existing inventory item for this delivery
+      inventoryItem = await Inventory.findOne({ 
+        sourceDelivery: delivery._id,
+        location: { $regex: new RegExp(location, 'i') } // Case-insensitive match
+      });
+      
+      // If found, update quality notes and condition if provided
+      if (inventoryItem) {
+        if (condition) inventoryItem.qualityGrade = condition;
+        if (qualityNotes) inventoryItem.notes = qualityNotes;
+        await inventoryItem.save();
+      }
+    } else {
+      // Delivery not yet processed - create inventory item manually
+      message = 'Delivery confirmed and added to inventory';
+      
+      // Create new inventory item
+      inventoryItem = new Inventory({
+        user: req.user.id, // warehouse manager
+        itemName: delivery.goodsDescription,
+        quantity: receivedQuantity || delivery.quantity,
+        unit,
+        location,
+        addedByRole: req.user.role,
+        qualityGrade: condition || 'Standard',
+        notes: qualityNotes || '',
+        sourceDelivery: delivery._id,
+        status: 'available',
+        description: `Added from delivery ${delivery._id} confirmed by ${req.user.name}`
+      });
+
+      await inventoryItem.save();
+      
+      // Update delivery status
+      delivery.receivedByWarehouse = true;
+      delivery.warehouseReceivedAt = new Date();
+      await delivery.save();
+      
+      // Create notification for farmer
+      if (delivery.farmer) {
+        await NotificationService.general(
+          delivery.farmer,
+          '📦 Delivery Confirmed by Warehouse',
+          `Your delivery of ${delivery.goodsDescription} (${receivedQuantity || delivery.quantity} ${unit}) has been confirmed by ${req.user.name} at ${location} warehouse.${qualityNotes ? ` Quality notes: ${qualityNotes}` : ''}`,
+          'success'
+        );
+      }
+    }
+
+    // Send successful response with appropriate data
+    res.json({
+      message,
+      delivery,
+      inventoryItem,
+      wasAlreadyProcessed: delivery.receivedByWarehouse
+    });
+  } catch (error) {
+    console.error('Error confirming delivery receipt:', error);
+    res.status(500).json({ message: 'Error confirming delivery receipt', error: error.message });
   }
-
-  const { unit, location } = req.body;
-  if (!unit || !location) {
-    return res.status(400).json({ message: 'Unit and location are required' });
-  }
-
-  const delivery = await Delivery.findById(req.params.id);
-  if (!delivery) return res.status(404).json({ message: 'Delivery not found' });
-
-  if (delivery.receivedByWarehouse) {
-    return res.status(400).json({ message: 'Already confirmed' });
-  }
-
-  delivery.receivedByWarehouse = true;
-  await delivery.save();
-
-  const inventoryItem = new Inventory({
-    user: req.user.id, // warehouse manager
-    itemName: delivery.goodsDescription,
-    quantity: delivery.quantity,
-    unit,
-    location,
-    addedByRole: req.user.role
-  });
-
-  await inventoryItem.save();
-
-  res.json({
-    message: 'Delivery confirmed and added to inventory',
-    delivery,
-    inventoryItem
-  });
 });
 
 
@@ -847,6 +1100,7 @@ router.get('/:id/route', protect, async (req, res) => {
       pickedUp: delivery.pickedUp,
       goodsDescription: delivery.goodsDescription,
       quantity: delivery.quantity,
+      items: delivery.items || [],
       requesterType: requesterType,
       
       // Pickup location (farmer or vendor) with enhanced coordinate handling

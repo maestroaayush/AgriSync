@@ -97,6 +97,14 @@ const UserSchema = new mongoose.Schema({
   profilePhoto: {
     type: String,
     default: null
+  },
+  // Warehouse manager specific fields
+  capacityLimit: {
+    type: Number,
+    required: function() {
+      return this.role === 'warehouse_manager';
+    },
+    min: 0
   }
 }, {
   timestamps: true

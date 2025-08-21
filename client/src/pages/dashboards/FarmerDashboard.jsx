@@ -232,7 +232,7 @@ function FarmerDashboard() {
     
     try {
       console.log('📤 Sending request to API...');
-      const response = await axios.post("http://localhost:5000/api/inventory", itemToSend, {
+      const response = await axios.post("http://localhost:5000/api/farmer/inventory/add", itemToSend, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -494,7 +494,11 @@ function FarmerDashboard() {
     // Redirect if role is not farmer
     if (user.role !== "farmer") {
       console.log(`User role is ${user.role}, redirecting to appropriate dashboard`);
-      navigate(`/${user.role}/dashboard`);
+      if (user?.role) {
+        navigate(`/${user.role}/dashboard`);
+      } else {
+        navigate("/");
+      }
       return;
     }
 
@@ -1587,18 +1591,28 @@ const markAllNotificationsRead = async () => {
                       <div className="flex items-center space-x-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           delivery.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                          delivery.status === 'in-transit' ? 'bg-blue-100 text-blue-800' :
+                          delivery.status === 'in-transit' || delivery.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
+                          delivery.status === 'assigned' ? 'bg-purple-100 text-purple-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {delivery.status}
+                          {delivery.status === 'in_transit' ? 'In Transit' : 
+                           delivery.status === 'delivered' ? 'Delivered' :
+                           delivery.status === 'assigned' ? 'Assigned' : 
+                           delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1)}
                         </span>
                         {delivery.status === 'delivered' && (
-                          <button
-                            onClick={() => confirmDelivery(delivery)}
-                            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition"
-                          >
-                            Confirm
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => {
+                                // Show detailed delivery completion info with inventory transfer
+                                alert(`✅ Delivery Completed Successfully!\n\n📦 Items: ${delivery.goodsDescription || delivery.itemName} (${delivery.quantity} units)\n\n🔄 Inventory Transfer:\n🌾 Your inventory: Items automatically removed\n🏦 Warehouse inventory: Items automatically added\n\n📧 All parties have been notified of the completion.\n\n🎉 Thank you for using AgriSync!`);
+                              }}
+                              className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition flex items-center"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              View Details
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1623,6 +1637,31 @@ const markAllNotificationsRead = async () => {
                     {delivery.notes && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <p className="text-sm text-gray-700">{delivery.notes}</p>
+                      </div>
+                    )}
+                    {delivery.status === 'delivered' && (
+                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <h5 className="font-medium text-green-800">Inventory Transfer Completed</h5>
+                        </div>
+                        <div className="space-y-2 text-sm text-green-700">
+                          <p className="flex items-center space-x-2">
+                            <span className="font-medium">🌾 Your farm inventory:</span>
+                            <span>Items automatically removed from your stock</span>
+                          </p>
+                          <p className="flex items-center space-x-2">
+                            <span className="font-medium">🏦 Warehouse inventory:</span>
+                            <span>Items automatically added to warehouse</span>
+                          </p>
+                          <p className="flex items-center space-x-2">
+                            <span className="font-medium">📧 Notifications:</span>
+                            <span>All parties have been notified</span>
+                          </p>
+                        </div>
+                        <div className="mt-3 p-2 bg-green-100 rounded text-xs text-green-600">
+                          💡 Inventory transfer was handled automatically when the transporter marked this delivery as completed.
+                        </div>
                       </div>
                     )}
                   </div>

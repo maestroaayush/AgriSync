@@ -44,6 +44,24 @@ receivedByWarehouse: {
     type: String,
     default: 'units'
   },
+  // Detailed items array for multiple products in a single delivery
+  items: [{
+    crop: {
+      type: String,
+      required: true
+    },
+    productName: String,
+    product: String,
+    quantity: {
+      type: Number,
+      required: true
+    },
+    unit: {
+      type: String,
+      default: 'kg'
+    },
+    description: String
+  }],
   status: {
     type: String,
     enum: ['pending', 'assigned', 'in_transit', 'delivered', 'requested', 'rejected'],

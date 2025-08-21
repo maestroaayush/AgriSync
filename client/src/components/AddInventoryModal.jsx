@@ -3,11 +3,14 @@ import axios from "axios";
 import { Package, X, AlertCircle, Loader, CheckCircle } from "lucide-react";
 
 function AddInventoryModal({ onClose, onSuccess }) {
+  const user = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
+  
   const [form, setForm] = useState({
     itemName: "",
     quantity: "",
     unit: "kg",
-    location: "",
+    location: user?.location || "", // Auto-set to user's warehouse location
     description: "",
     category: "other",
     price: ""
@@ -16,9 +19,6 @@ function AddInventoryModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  const user = JSON.parse(localStorage.getItem("user"));
-  const token = localStorage.getItem("token");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,22 +38,27 @@ function AddInventoryModal({ onClose, onSuccess }) {
       if (!form.quantity || parseInt(form.quantity) <= 0) {
         throw new Error("Quantity must be a positive number");
       }
-      if (!form.location.trim()) {
-        throw new Error("Storage location is required");
+      
+      // Use user's warehouse location
+      const warehouseLocation = user?.location || form.location.trim();
+      if (!warehouseLocation) {
+        throw new Error("Warehouse location is required");
       }
       
       const payload = {
         ...form,
         quantity: parseInt(form.quantity),
         price: form.price ? parseFloat(form.price) : 0,
-        location: form.location.trim() || user?.location || "Main Warehouse"
+        location: warehouseLocation, // Use warehouse manager's location
+        reason: 'Manual addition by warehouse manager'
       };
       
       console.log('Submitting inventory item:', payload);
       console.log('Token available:', !!token);
       console.log('User:', user);
       
-      const response = await axios.post("http://localhost:5000/api/inventory", payload, {
+      // Use the warehouse-specific endpoint
+      const response = await axios.post("http://localhost:5000/api/warehouse/inventory/add", payload, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -206,18 +211,17 @@ function AddInventoryModal({ onClose, onSuccess }) {
         
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Storage Location *
+            Warehouse Location
           </label>
           <input
             type="text"
             name="location"
-            placeholder={user?.location || "e.g., Section A, Shelf 1"}
-            value={form.location}
-            onChange={handleChange}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white/80 backdrop-blur-sm"
-            required
-            disabled={loading}
+            value={form.location || user?.location || ""}
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-200 backdrop-blur-sm cursor-not-allowed"
+            disabled={true} // Location is auto-set from user's warehouse
+            title="Location is automatically set based on your assigned warehouse"
           />
+          <p className="text-xs text-gray-500 mt-1">Items will be added to your assigned warehouse: {user?.location}</p>
         </div>
         
         <div>

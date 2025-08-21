@@ -58,29 +58,9 @@ const liveLocationIcon = L.divIcon({
   iconAnchor: [17, 17]
 });
 
-// Route Modal Component with Interactive Map
-const RouteModal = ({ isOpen, onClose, routeData, delivery }) => {
+// Route Modal Component with Unified Interactive Map
+const RouteModal = ({ isOpen, onClose, routeData, delivery, liveLocation }) => {
   if (!isOpen || !routeData || !delivery) return null;
-
-  // Extract coordinates from the backend response structure
-  const pickupCoords = routeData.pickup?.coordinates;
-  const dropoffCoords = routeData.delivery?.coordinates;
-  
-  // Calculate map center and route coordinates
-  const mapCenter = pickupCoords && dropoffCoords
-    ? [
-        (pickupCoords.latitude + dropoffCoords.latitude) / 2,
-        (pickupCoords.longitude + dropoffCoords.longitude) / 2
-      ]
-    : [27.705545, 85.333525]; // Default center
-
-  const routeCoordinates = [];
-  if (pickupCoords && pickupCoords.latitude && pickupCoords.longitude) {
-    routeCoordinates.push([pickupCoords.latitude, pickupCoords.longitude]);
-  }
-  if (dropoffCoords && dropoffCoords.latitude && dropoffCoords.longitude) {
-    routeCoordinates.push([dropoffCoords.latitude, dropoffCoords.longitude]);
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -107,9 +87,9 @@ const RouteModal = ({ isOpen, onClose, routeData, delivery }) => {
                   📍 Pickup Location
                 </h4>
                 <p className="text-sm text-gray-700">{routeData.pickup?.location || delivery.pickupLocation}</p>
-                {pickupCoords && (
+                {routeData.pickup?.coordinates && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Coordinates: {pickupCoords.latitude?.toFixed(4)}, {pickupCoords.longitude?.toFixed(4)}
+                    Coordinates: {routeData.pickup.coordinates.latitude?.toFixed(4)}, {routeData.pickup.coordinates.longitude?.toFixed(4)}
                   </p>
                 )}
               </div>
@@ -119,9 +99,9 @@ const RouteModal = ({ isOpen, onClose, routeData, delivery }) => {
                   🏭 Warehouse Location
                 </h4>
                 <p className="text-sm text-gray-700">{routeData.delivery?.warehouse?.name || routeData.delivery?.location || delivery.dropoffLocation || 'Main Warehouse'}</p>
-                {dropoffCoords && (
+                {routeData.delivery?.coordinates && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Coordinates: {dropoffCoords.latitude?.toFixed(4)}, {dropoffCoords.longitude?.toFixed(4)}
+                    Coordinates: {routeData.delivery.coordinates.latitude?.toFixed(4)}, {routeData.delivery.coordinates.longitude?.toFixed(4)}
                   </p>
                 )}
               </div>
@@ -186,100 +166,19 @@ const RouteModal = ({ isOpen, onClose, routeData, delivery }) => {
             </div>
           </div>
           
-          {/* Right Panel - Interactive Map */}
+          {/* Right Panel - Unified Interactive Map */}
           <div className="flex-1 relative">
-            {pickupCoords && dropoffCoords && pickupCoords.latitude && dropoffCoords.latitude ? (
-              <MapContainer
-                center={mapCenter}
-                zoom={12}
-                style={{ height: '100%', width: '100%' }}
-                className="h-full w-full"
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                
-                {/* Pickup Location Marker */}
-                <Marker 
-                  position={[pickupCoords.latitude, pickupCoords.longitude]}
-                  icon={pickupIcon}
-                >
-                  <Popup maxWidth={300}>
-                    <div className="p-3">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                          🌾
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-green-800">Pickup Location</h4>
-                          <p className="text-sm text-gray-600">{routeData.pickup?.location || delivery.pickupLocation}</p>
-                        </div>
-                      </div>
-                      <div className="text-sm space-y-1">
-                        <p><strong>Farmer:</strong> {routeData.pickup?.contact?.name || delivery.farmerId?.name || delivery.farmer?.name || 'Unknown'}</p>
-                        {routeData.pickup?.contact?.email && (
-                          <p><strong>Email:</strong> {routeData.pickup.contact.email}</p>
-                        )}
-                        <p><strong>Coordinates:</strong> {pickupCoords.latitude?.toFixed(6)}, {pickupCoords.longitude?.toFixed(6)}</p>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-                
-                {/* Dropoff Location Marker */}
-                <Marker 
-                  position={[dropoffCoords.latitude, dropoffCoords.longitude]}
-                  icon={dropoffIcon}
-                >
-                  <Popup maxWidth={300}>
-                    <div className="p-3">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          🏭
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-blue-800">Dropoff Location</h4>
-                          <p className="text-sm text-gray-600">{routeData.delivery?.warehouse?.name || routeData.delivery?.location || delivery.dropoffLocation || 'Warehouse'}</p>
-                        </div>
-                      </div>
-                      <div className="text-sm space-y-1">
-                        <p><strong>Warehouse:</strong> {routeData.delivery?.warehouse?.name || routeData.delivery?.location || 'Main Warehouse'}</p>
-                        <p><strong>Coordinates:</strong> {dropoffCoords.latitude?.toFixed(6)}, {dropoffCoords.longitude?.toFixed(6)}</p>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-                
-                {/* Route Line */}
-                {routeCoordinates.length > 1 && (
-                  <Polyline
-                    positions={routeCoordinates}
-                    color="#3B82F6"
-                    weight={4}
-                    opacity={0.7}
-                    dashArray="10, 10"
-                  />
-                )}
-              </MapContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-100">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">🗺️</div>
-                  <p className="text-gray-500 mb-2">Route coordinates not available</p>
-                  <p className="text-sm text-gray-400">Contact admin to set pickup and dropoff coordinates</p>
-                  {/* Debug info */}
-                  <div className="mt-4 text-xs text-gray-400 bg-gray-50 p-3 rounded">
-                    <p>Debug Info:</p>
-                    <p>Pickup coords: {pickupCoords ? JSON.stringify(pickupCoords) : 'null'}</p>
-                    <p>Dropoff coords: {dropoffCoords ? JSON.stringify(dropoffCoords) : 'null'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <UnifiedRouteMap
+              routeData={routeData}
+              delivery={delivery}
+              liveLocation={liveLocation}
+              className="border-0 shadow-none"
+              height="100%"
+              showOptimization={false}
+              showInteractive={true}
+            />
           </div>
         </div>
-        
         
         <div className="p-4 border-t bg-gray-50 flex justify-end">
           <button
@@ -338,6 +237,7 @@ import "react-datepicker/dist/react-datepicker.css";
 // Lazy imports for map components to prevent SSR issues
 import TransporterLocationService from "../../components/TransporterLocationService";
 import RouteOptimization from "../../components/RouteOptimization";
+import UnifiedRouteMap from "../../components/UnifiedRouteMap";
 
 // Real-time GPS Tester Component
 const GPSTester = () => {
@@ -754,6 +654,17 @@ const startLocationSharing = async (deliveryId) => {
     return;
   }
 
+  // Enhanced browser detection for better error messages
+  const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+  console.log('🔒 Secure context check:', isSecureContext);
+  console.log('🌐 Current protocol:', location.protocol);
+  console.log('🌐 Current hostname:', location.hostname);
+  
+  if (!isSecureContext) {
+    setLocationError("Location sharing requires a secure connection (HTTPS). Please access the site through HTTPS or localhost.");
+    return;
+  }
+
   // Check permission status first
   if ('permissions' in navigator) {
     try {
@@ -761,13 +672,21 @@ const startLocationSharing = async (deliveryId) => {
       console.log('📍 Current geolocation permission:', permission.state);
       
       if (permission.state === 'denied') {
-        setLocationError("Location access is denied. Please enable location permissions in your browser settings and refresh the page.");
+        setLocationError("Location access is permanently denied. Please:\n1. Click the location icon (🔒) in your browser's address bar\n2. Reset permissions for this site\n3. Refresh the page and try again");
         return;
+      }
+      
+      if (permission.state === 'prompt') {
+        console.log('📍 Permission will be requested from user');
       }
     } catch (permError) {
       console.log('⚠️ Could not check permission status:', permError);
     }
   }
+
+  // Show immediate feedback to user
+  setLocationError('🔄 Requesting location access... Please allow location access when prompted.');
+  setIsRetrying(true);
 
   // Progressive fallback strategy for location access with improved timeouts
   const tryLocationAccess = async () => {
@@ -785,12 +704,22 @@ const startLocationSharing = async (deliveryId) => {
     // First try high accuracy with extended timeout
     try {
       const position = await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Location request timed out after 20 seconds'));
+        }, 20000);
+        
         navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (err) => {
+            clearTimeout(timeoutId);
+            reject(err);
+          },
           {
             enableHighAccuracy: true,
-            timeout: 15000, // Extended timeout for high accuracy
+            timeout: 18000, // Slightly less than our manual timeout
             maximumAge: 30000 // 30 seconds cache
           }
         );
@@ -802,17 +731,27 @@ const startLocationSharing = async (deliveryId) => {
       console.log('⚠️ High accuracy failed, trying standard accuracy...', highAccuracyError);
       
       // If high accuracy fails due to timeout, try standard accuracy
-      if (highAccuracyError.code === 3) { // TIMEOUT
+      if (highAccuracyError.code === 3 || highAccuracyError.message.includes('timeout')) { // TIMEOUT
         console.log('🔄 Trying network-based location...');
         
         try {
           const position = await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+              reject(new Error('Network location request timed out after 30 seconds'));
+            }, 30000);
+            
             navigator.geolocation.getCurrentPosition(
-              resolve,
-              reject,
+              (pos) => {
+                clearTimeout(timeoutId);
+                resolve(pos);
+              },
+              (err) => {
+                clearTimeout(timeoutId);
+                reject(err);
+              },
               {
                 enableHighAccuracy: false, // Use network location
-                timeout: 30000, // Much longer timeout for network location
+                timeout: 28000, // Slightly less than our manual timeout
                 maximumAge: 120000 // 2 minute cache
               }
             );
@@ -834,14 +773,21 @@ const startLocationSharing = async (deliveryId) => {
   try {
     const position = await tryLocationAccess();
     console.log('✅ Location access confirmed, starting sharing...');
+    console.log('📍 Initial position:', position.coords);
+    
     setActiveDeliveryId(deliveryId);
     setIsLocationSharing(true);
     setLocationError(null);
+    setIsRetrying(false);
+    
+    // Show success message
+    alert('✅ Location sharing started successfully! Your location will be tracked every 30 seconds.');
     
     // Start immediate location update
     setTimeout(() => updateLocation(), 1000);
   } catch (error) {
     console.error('❌ Location access test failed:', error);
+    setIsRetrying(false);
     
     const currentRetry = retryCount + 1;
     setRetryCount(currentRetry);
@@ -850,20 +796,25 @@ const startLocationSharing = async (deliveryId) => {
     let shouldRetry = false;
     
     switch (error.code) {
-      case error.PERMISSION_DENIED:
-        errorMessage += "Location access was denied. Please:\n1. Click the location icon in your browser's address bar\n2. Allow location access for this site\n3. Refresh the page and try again";
+      case 1: // PERMISSION_DENIED
+        errorMessage += "Location access was denied. Please:\n1. Click the location icon (🔒) in your browser's address bar\n2. Allow location access for this site\n3. Refresh the page and try again\n\nAlternatively, you can:\n• Check browser settings for location permissions\n• Ensure location services are enabled on your device";
         break;
-      case error.POSITION_UNAVAILABLE:
-        errorMessage += "Location is unavailable. Please:\n1. Ensure GPS is enabled on your device\n2. Try moving to an area with better signal\n3. Check if location services are enabled in browser settings";
+      case 2: // POSITION_UNAVAILABLE
+        errorMessage += "Location is unavailable. Please:\n1. Ensure GPS is enabled on your device\n2. Try moving to an area with better signal\n3. Check if location services are enabled in browser settings\n4. Try restarting your browser";
         shouldRetry = currentRetry < 3;
         break;
-      case error.TIMEOUT:
+      case 3: // TIMEOUT
         errorMessage += `Location request timed out (attempt ${currentRetry}/3). This often happens:\n1. Indoors or in areas with poor GPS signal\n2. When GPS is initializing\n3. On some devices with strict power saving\n\nTip: Try moving outdoors or near a window.`;
         shouldRetry = currentRetry < 3;
         break;
       default:
-        errorMessage += "Unknown location error. Please check your device settings and try again.";
-        shouldRetry = currentRetry < 2;
+        if (error.message && error.message.includes('timeout')) {
+          errorMessage += `Location request timed out after extended period (attempt ${currentRetry}/3). This suggests:\n1. Very weak GPS signal\n2. Browser/device location services may be disabled\n3. Network connectivity issues\n\nTry: Moving to a location with better signal or enabling high-accuracy location in device settings.`;
+          shouldRetry = currentRetry < 3;
+        } else {
+          errorMessage += `Unknown location error: ${error.message}. Please check your device settings and try again.`;
+          shouldRetry = currentRetry < 2;
+        }
         break;
     }
     
@@ -877,7 +828,7 @@ const startLocationSharing = async (deliveryId) => {
         startLocationSharing(deliveryId);
       }, Math.pow(2, currentRetry) * 5000); // 5s, 10s, 20s delays
     } else {
-      errorMessage += "\n\n💡 Alternative: You can enable mock location mode for testing purposes.";
+      errorMessage += "\n\n💡 Alternative: You can enable mock location mode for testing purposes using the button below.";
       setIsRetrying(false);
     }
     
@@ -913,7 +864,7 @@ const updateLocation = async () => {
     }
   }
 
-  // Progressive fallback strategy with better timeout handling
+  // Enhanced fallback strategy with aggressive caching and timeout management
   const getLocationWithFallback = async () => {
     console.log('🔄 Getting location for update...');
     console.log('🔍 useMockLocation state:', useMockLocation);
@@ -934,63 +885,136 @@ const updateLocation = async () => {
       };
     }
     
-    // Try cached location first (very fast)
+    // Strategy 1: Try very recent cached location first (ultra-fast)
     try {
-      const cachedPosition = await new Promise((resolve, reject) => {
+      const recentCachedPosition = await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Recent cache lookup timed out'));
+        }, 3000); // Very short timeout for cache lookup
+        
         navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (err) => {
+            clearTimeout(timeoutId);
+            reject(err);
+          },
           {
             enableHighAccuracy: false,
-            timeout: 8000, // Extended timeout for cached data
-            maximumAge: 120000 // Accept 2-minute old data for updates
+            timeout: 2500, // Very short timeout
+            maximumAge: 60000 // Accept 1-minute old data (recent cache)
           }
         );
       });
       
-      console.log('✅ Cached location obtained for update');
-      return cachedPosition;
-    } catch (cachedError) {
-      console.log('⚠️ Cached location failed, trying fresh location...', cachedError);
+      console.log('✅ Recent cached location obtained for update (ultra-fast)');
+      return recentCachedPosition;
+    } catch (recentCacheError) {
+      console.log('⚠️ Recent cache failed, trying older cached location...', recentCacheError.message);
       
-      // If cached fails, try fresh location with reasonable timeout
+      // Strategy 2: Try older cached location (still fast)
       try {
-        const position = await new Promise((resolve, reject) => {
+        const olderCachedPosition = await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Older cache lookup timed out'));
+          }, 5000);
+          
           navigator.geolocation.getCurrentPosition(
-            resolve,
-            reject,
+            (pos) => {
+              clearTimeout(timeoutId);
+              resolve(pos);
+            },
+            (err) => {
+              clearTimeout(timeoutId);
+              reject(err);
+            },
             {
-              enableHighAccuracy: true,
-              timeout: 15000, // Extended timeout to avoid frequent failures
-              maximumAge: 60000 // 1 minute cache
+              enableHighAccuracy: false,
+              timeout: 4500,
+              maximumAge: 300000 // Accept 5-minute old data
             }
           );
         });
         
-        console.log('✅ Fresh high accuracy location obtained for update');
-        return position;
-      } catch (freshError) {
-        console.log('⚠️ Fresh high accuracy failed, trying network location...', freshError);
+        console.log('✅ Older cached location obtained for update (fast)');
+        return olderCachedPosition;
+      } catch (olderCacheError) {
+        console.log('⚠️ Older cache failed, trying fresh GPS with conservative timeout...', olderCacheError.message);
         
-        // Final fallback to network-based location
+        // Strategy 3: Fresh GPS with conservative timeout (slower but more reliable)
         try {
-          const position = await new Promise((resolve, reject) => {
+          const freshPosition = await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+              reject(new Error('Fresh GPS lookup timed out after 12 seconds'));
+            }, 12000); // Conservative timeout
+            
             navigator.geolocation.getCurrentPosition(
-              resolve,
-              reject,
+              (pos) => {
+                clearTimeout(timeoutId);
+                resolve(pos);
+              },
+              (err) => {
+                clearTimeout(timeoutId);
+                reject(err);
+              },
               {
-                enableHighAccuracy: false, // Network-based location
-                timeout: 25000, // Much longer timeout for network location
-                maximumAge: 300000 // Accept 5-minute old data as last resort
+                enableHighAccuracy: true,
+                timeout: 11000, // Slightly less than manual timeout
+                maximumAge: 30000 // Only accept very recent data for fresh requests
               }
             );
           });
           
-          console.log('✅ Network-based location obtained for update');
-          return position;
-        } catch (networkError) {
-          console.error('❌ All location methods failed for update:', networkError);
-          throw networkError;
+          console.log('✅ Fresh GPS location obtained for update');
+          return freshPosition;
+        } catch (freshError) {
+          console.log('⚠️ Fresh GPS failed, trying network-based location with extended timeout...', freshError.message);
+          
+          // Strategy 4: Network-based location with extended timeout (last resort)
+          try {
+            const networkPosition = await new Promise((resolve, reject) => {
+              const timeoutId = setTimeout(() => {
+                reject(new Error('Network location lookup timed out after 20 seconds'));
+              }, 20000);
+              
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  clearTimeout(timeoutId);
+                  resolve(pos);
+                },
+                (err) => {
+                  clearTimeout(timeoutId);
+                  reject(err);
+                },
+                {
+                  enableHighAccuracy: false, // Network-based location
+                  timeout: 19000,
+                  maximumAge: 600000 // Accept up to 10-minute old data as absolute last resort
+                }
+              );
+            });
+            
+            console.log('✅ Network-based location obtained for update (last resort)');
+            return networkPosition;
+          } catch (networkError) {
+            console.error('❌ All location strategies failed for update:', networkError);
+            
+            // Log detailed timeout analysis
+            console.log('📊 Timeout Analysis:');
+            console.log('   - Recent cache (1min): FAILED');
+            console.log('   - Older cache (5min): FAILED');
+            console.log('   - Fresh GPS (12s): FAILED');
+            console.log('   - Network location (20s): FAILED');
+            console.log('💡 This suggests either:');
+            console.log('   - Device GPS is disabled or malfunctioning');
+            console.log('   - Very poor signal conditions');
+            console.log('   - Browser/system location services are disabled');
+            console.log('   - Device is in airplane mode or similar');
+            
+            throw networkError;
+          }
         }
       }
     }
@@ -1402,7 +1426,7 @@ useEffect(() => {
       console.error("Failed to load deliveries", err);
     }
   };
-  const updateStatus = async (id, newStatus) =e {
+  const updateStatus = async (id, newStatus) => {
     try {
       await axios.put(
         `http://localhost:5000/api/deliveries/${id}/status`,
@@ -1411,14 +1435,14 @@ useEffect(() => {
       );
       // Optimistically update UI: remove completed/cancelled tasks from active list
       if (newStatus === 'delivered' || newStatus === 'cancelled') {
-        setDeliveries(prev =e prev.filter(d =e String(d._id) !== String(id)));
+        setDeliveries(prev => prev.filter(d => String(d._id) !== String(id)));
+        setRenderKey(prev => prev + 1);
       } else {
         fetchDeliveries();
       }
     } catch (err) {
       console.error("Failed to update delivery status", err);
     }
-  };
   };
 
   const fetchNotifications = async () => {
@@ -1521,7 +1545,11 @@ useEffect(() => {
   useEffect(() => {
     document.title = "Transporter Dashboard – AgriSync";
     if (user?.role !== "transporter") {
-      navigate(`/${user?.role || "login"}/dashboard`);
+      if (user?.role) {
+        navigate(`/${user.role}/dashboard`);
+      } else {
+        navigate("/");
+      }
       return;
     }
     fetchDeliveries();
@@ -1543,7 +1571,11 @@ useEffect(() => {
   }, [user?.id, user?.role, notificationRetryCount]);
 
   const switchRole = (newRole) => {
-    navigate(`/${newRole}/dashboard`);
+    if (newRole) {
+      navigate(`/${newRole}/dashboard`);
+    } else {
+      navigate("/");
+    }
   };
 
   // Profile management
@@ -2138,62 +2170,202 @@ useEffect(() => {
               </div>
             )}
             
-            {/* GPS Debug Panel */}
+            {/* Enhanced GPS Debug & Location Sharing Panel */}
             <div className="mb-6 bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-lg">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-800">🔍 GPS Debug Panel</h4>
+                <h4 className="font-medium text-gray-800">🔍 Location Sharing Debug Panel</h4>
                 <div className="flex space-x-2">
                   <button
                     onClick={async () => {
+                      // Test real GPS without delivery context
+                      console.log('🌍 Testing real GPS access...');
                       setUseMockLocation(false);
-                      console.log('🚀 Force using real GPS...');
                       
-                      if (activeDeliveryId && isLocationSharing) {
-                        console.log('🔄 Triggering immediate real GPS update...');
-                        await updateLocation();
-                      } else {
-                        console.log('⚠️ No active delivery to update location for');
+                      if (!navigator.geolocation) {
+                        alert('❌ Geolocation not supported by this browser');
+                        return;
+                      }
+                      
+                      try {
+                        const position = await new Promise((resolve, reject) => {
+                          navigator.geolocation.getCurrentPosition(
+                            resolve,
+                            reject,
+                            {
+                              enableHighAccuracy: true,
+                              timeout: 15000,
+                              maximumAge: 0
+                            }
+                          );
+                        });
+                        
+                        console.log('✅ Real GPS test successful:', position.coords);
+                        alert(`✅ Real GPS works! Location: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+                        
+                        if (activeDeliveryId && isLocationSharing) {
+                          console.log('🔄 Triggering immediate real GPS update...');
+                          await updateLocation();
+                        }
+                      } catch (error) {
+                        console.error('❌ Real GPS test failed:', error);
+                        alert(`❌ Real GPS failed: ${error.message} (Code: ${error.code})`);
                       }
                     }}
                     className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
                   >
-                    🌍 Force Real GPS
+                    🌍 Test Real GPS
                   </button>
                   <button
                     onClick={() => {
-                      console.log('=== LOCATION DEBUG INFO ===');
-                      console.log('useMockLocation:', useMockLocation);
-                      console.log('isLocationSharing:', isLocationSharing);
-                      console.log('activeDeliveryId:', activeDeliveryId);
-                      console.log('liveLocation:', liveLocation);
-                      console.log('navigator.geolocation available:', !!navigator.geolocation);
-                      console.log('=== END DEBUG ===');
+                      console.log('=== COMPLETE LOCATION DEBUG INFO ===');
+                      console.log('Browser Info:');
+                      console.log('  - User Agent:', navigator.userAgent);
+                      console.log('  - Platform:', navigator.platform);
+                      console.log('  - Secure Context:', window.isSecureContext);
+                      console.log('  - Protocol:', location.protocol);
+                      console.log('  - Hostname:', location.hostname);
+                      console.log('  - Geolocation Support:', !!navigator.geolocation);
+                      console.log('\nLocation Sharing State:');
+                      console.log('  - useMockLocation:', useMockLocation);
+                      console.log('  - isLocationSharing:', isLocationSharing);
+                      console.log('  - activeDeliveryId:', activeDeliveryId);
+                      console.log('  - isRetrying:', isRetrying);
+                      console.log('  - retryCount:', retryCount);
+                      console.log('  - locationError:', locationError);
+                      console.log('\nLive Location Data:');
+                      console.log('  - liveLocation:', liveLocation);
+                      console.log('  - isTrackingLive:', isTrackingLive);
+                      console.log('  - liveLocationError:', liveLocationError);
+                      console.log('\nDeliveries Context:');
+                      console.log('  - Total deliveries:', deliveries.length);
+                      console.log('  - In-transit deliveries:', deliveries.filter(d => d.status === 'in_transit').map(d => ({ id: d._id, status: d.status })));
+                      console.log('=== END COMPLETE DEBUG ===');
                     }}
                     className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors"
                   >
-                    📋 Debug Log
+                    📋 Complete Debug
+                  </button>
+                  <button
+                    onClick={async () => {
+                      console.log('🔍 Testing browser permissions...');
+                      
+                      if ('permissions' in navigator) {
+                        try {
+                          const permission = await navigator.permissions.query({ name: 'geolocation' });
+                          console.log('📍 Permission state:', permission.state);
+                          alert(`📍 Location permission: ${permission.state}`);
+                          
+                          if (permission.state === 'prompt') {
+                            console.log('🔄 Permission is prompt - requesting access...');
+                            navigator.geolocation.getCurrentPosition(
+                              (pos) => {
+                                console.log('✅ Permission granted:', pos.coords);
+                                alert(`✅ Permission granted! Location: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+                              },
+                              (err) => {
+                                console.error('❌ Permission denied or error:', err);
+                                alert(`❌ Permission error: ${err.message} (Code: ${err.code})`);
+                              },
+                              { timeout: 10000 }
+                            );
+                          }
+                        } catch (error) {
+                          console.error('❌ Permission query failed:', error);
+                          alert(`❌ Permission check failed: ${error.message}`);
+                        }
+                      } else {
+                        alert('❌ Permission API not supported in this browser');
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    🔒 Test Permissions
                   </button>
                 </div>
               </div>
               <div className="text-sm space-y-1">
+                <p><strong>Browser:</strong> {navigator.userAgent.split('(')[0].trim()}</p>
+                <p><strong>Secure Context:</strong> {window.isSecureContext ? '🔒 Yes' : '❌ No'} ({location.protocol})</p>
                 <p><strong>Mock Mode:</strong> {useMockLocation ? '🎭 Active' : '❌ Disabled'}</p>
                 <p><strong>Location Sharing:</strong> {isLocationSharing ? '✅ Active' : '❌ Inactive'}</p>
+                <p><strong>Active Delivery:</strong> {activeDeliveryId || 'None'}</p>
                 <p><strong>Live Location Data:</strong> {liveLocation ? `📍 ${Number(liveLocation.latitude).toFixed(6)}, ${Number(liveLocation.longitude).toFixed(6)}` : '❌ None'}</p>
                 <p><strong>GPS Available:</strong> {navigator.geolocation ? '✅ Yes' : '❌ No'}</p>
+                <p><strong>Retry Count:</strong> {retryCount}</p>
+                {locationError && (
+                  <p><strong>Last Error:</strong> <span className="text-red-600 text-xs">{locationError.split('\n')[0]}</span></p>
+                )}
+              </div>
+              
+              {/* Quick Location Test */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h5 className="font-medium text-blue-800 mb-2">🔬 Quick Location Test</h5>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={async () => {
+                      if (!navigator.geolocation) {
+                        alert('❌ Geolocation not supported');
+                        return;
+                      }
+                      
+                      console.log('🔄 Quick location test...');
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          console.log('✅ Quick test successful:', position.coords);
+                          alert(`✅ Location: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}\nAccuracy: ${position.coords.accuracy}m`);
+                        },
+                        (error) => {
+                          console.error('❌ Quick test failed:', error);
+                          alert(`❌ Error: ${error.message}\nCode: ${error.code}\n\nCodes:\n1=Permission Denied\n2=Position Unavailable\n3=Timeout`);
+                        },
+                        {
+                          enableHighAccuracy: false,
+                          timeout: 10000,
+                          maximumAge: 60000
+                        }
+                      );
+                    }}
+                    className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition-colors"
+                  >
+                    📍 Quick GPS Test
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUseMockLocation(true);
+                      setLocationError(null);
+                      alert('🎭 Mock location enabled! Location sharing will use simulated coordinates.');
+                    }}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600 transition-colors"
+                  >
+                    🎭 Enable Mock
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLocationError(null);
+                      setRetryCount(0);
+                      setIsRetrying(false);
+                      alert('🧹 Location errors cleared!');
+                    }}
+                    className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 transition-colors"
+                  >
+                    🧹 Clear Errors
+                  </button>
+                </div>
+                <p className="text-xs text-blue-700">💡 Use "Quick GPS Test" to check if location access works before starting location sharing</p>
               </div>
             </div>
 
-            <div className="grid gap-6">
-              {filteredDeliveries.length e 0 ? (
-                filteredDeliveries.map((delivery, index) =e (
-                  cdiv key={delivery._id || index} className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300"
+            <div className="grid gap-6" key={renderKey}>
+              {filteredDeliveries.length > 0 ? (
+                filteredDeliveries.map((delivery, index) => (
+                  <div key={delivery._id || index} className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center">
                           <Package className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-900">{delivery.goodsDescription || 'Unknown Item'}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900">{delivery.goodsDescription || delivery.productName || delivery.product || 'Unknown Item'}</h4>
                           <p className="text-sm text-gray-500">Quantity: {delivery.quantity} units</p>
                         </div>
                       </div>
@@ -2293,17 +2465,36 @@ useEffect(() => {
                               onClick={async () => {
                                 console.log('✅ Marking delivery as completed for:', delivery._id);
                                 
-                                // 1. Update status to delivered
-                                await updateStatus(delivery._id, 'delivered');
-                                
-                                // 2. Automatically stop location sharing
-                                stopLocationSharing();
-                                
-                                console.log('🔄 Delivery completed: status updated + location sharing stopped');
+                                try {
+                                  // Show loading state
+                                  setPickupLoading(delivery._id);
+                                  
+                                  // 1. Update status to delivered
+                                  await updateStatus(delivery._id, 'delivered');
+                                  
+                                  // 2. Automatically stop location sharing
+                                  stopLocationSharing();
+                                  
+                                  console.log('🔄 Delivery completed: status updated + location sharing stopped');
+                                  
+                                  // 3. Show success message with inventory transfer info
+                                  alert(`✅ Delivery Completed Successfully!\n\n📦 Delivery: ${delivery.goodsDescription} (${delivery.quantity} units)\n🌾 Farmer inventory: Items automatically removed\n🏦 Warehouse inventory: Items automatically added\n🔄 Location sharing: Stopped\n\nThe farmer and warehouse manager have been notified.`);
+                                  
+                                } catch (error) {
+                                  console.error('❌ Error completing delivery:', error);
+                                  alert(`❌ Failed to complete delivery: ${error.message}`);
+                                } finally {
+                                  setPickupLoading(null);
+                                }
                               }}
-                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center"
+                              disabled={pickupLoading === delivery._id}
+                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center disabled:opacity-50"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              {pickupLoading === delivery._id ? (
+                                <div className="w-4 h-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                              )}
                               Mark Delivered
                             </button>
                             {activeDeliveryId === delivery._id && isLocationSharing ? (
@@ -2979,43 +3170,61 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Real-time GPS Tester */}
-            <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                📍 Live GPS Location Tester
-              </h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <GPSTester />
-              </div>
-            </div>
-
-            {/* Route Optimization Component */}
-            <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <Route className="h-5 w-5 mr-2" />
-                Route Optimization
-              </h3>
-              
-              {RouteOptimization ? (
-                <RouteOptimization 
-                  deliveries={deliveries}
-                  currentLocation={user?.location ? { lat: 19.0760, lng: 72.8777 } : null}
-                  className=""
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <Route className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-2">Route optimization is currently unavailable</p>
-                  <p className="text-sm text-gray-400">Please refresh the page or try again later</p>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Refresh Page
-                  </button>
+            {/* Conditional Content Based on Route Selection */}
+            {!routeData ? (
+              <>
+                {/* Show Route Optimization when no specific route is selected */}
+                <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 mb-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <Route className="h-5 w-5 mr-2" />
+                    Route Optimization
+                  </h3>
+                  
+                  {RouteOptimization ? (
+                    <RouteOptimization 
+                      deliveries={deliveries}
+                      currentLocation={user?.location ? { lat: 19.0760, lng: 72.8777 } : null}
+                      className=""
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <Route className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-2">Route optimization is currently unavailable</p>
+                      <p className="text-sm text-gray-400">Please refresh the page or try again later</p>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                      >
+                        Refresh Page
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* GPS panel removed for production */}
+              </>
+            ) : (
+              /* Show helpful instructions when a specific route is selected */
+              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200 text-center">
+                <h4 className="text-lg font-semibold text-blue-800 mb-2">🗺️ Route View Active</h4>
+                <p className="text-blue-700 mb-3">
+                  You are currently viewing the route for <strong>{routeDelivery?.goodsDescription || 'selected delivery'}</strong>.
+                </p>
+                <p className="text-sm text-blue-600 mb-4">
+                  The interactive route map above shows your pickup and delivery locations with live tracking.
+                </p>
+                <button
+                  onClick={() => {
+                    setRouteData(null);
+                    setRouteDelivery(null);
+                    setSelectedDeliveryRoute(null);
+                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  🔄 Back to Route Optimization
+                </button>
+              </div>
+            )}
           </div>
         )}
 

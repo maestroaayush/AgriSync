@@ -45,7 +45,7 @@ const upload = multer({
 // @route   POST /api/auth/register
 // @desc    Register user and send OTP for email verification
 router.post('/register', async (req, res) => {
-  const { name, email, password, role, phone, location } = req.body;
+  const { name, email, password, role, phone, location, capacityLimit } = req.body;
 
   try {
     // Input validation
@@ -107,6 +107,13 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Invalid role selected' });
     }
 
+    // Validate capacity limit for warehouse managers
+    if (role === 'warehouse_manager') {
+      if (!capacityLimit || isNaN(capacityLimit) || parseFloat(capacityLimit) <= 0) {
+        return res.status(400).json({ message: 'Capacity limit is required for warehouse managers and must be a positive number' });
+      }
+    }
+
     // Generate OTP and expiration time
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
@@ -115,7 +122,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
     
     // Create user with unverified email
-    const user = new User({ 
+    const userData = { 
       name: name.trim(), 
       email: email.toLowerCase().trim(), 
       password: hashedPassword, 
@@ -126,7 +133,14 @@ router.post('/register', async (req, res) => {
       emailVerificationToken: otp,
       emailVerificationExpires: otpExpires,
       approved: false // Will be set after email verification and admin approval
-    });
+    };
+
+    // Add capacity limit for warehouse managers
+    if (role === 'warehouse_manager' && capacityLimit) {
+      userData.capacityLimit = parseFloat(capacityLimit);
+    }
+
+    const user = new User(userData);
 
     await user.save();
     
@@ -588,7 +602,36 @@ router.put('/users/:id/approve', protect, async (req, res) => {
     user.approved = true;
     await user.save();
 
-    res.json({ 
+    let warehouseCreated = null;
+    
+    // If this is a warehouse manager, automatically create a warehouse
+    if (user.role === 'warehouse_manager') {
+      try {
+        const Warehouse = require('../models/Warehouse');
+        
+        // Check if warehouse already exists for this manager
+        const existingWarehouse = await Warehouse.findOne({ manager: user._id });
+        
+        if (!existingWarehouse) {
+          const warehouse = new Warehouse({
+            location: user.location || `${user.name}'s Warehouse`,
+            capacityLimit: user.capacityLimit || 1000, // Use user's capacity limit or default
+            currentCapacity: 0,
+            manager: user._id,
+            isManuallyAdded: false,
+            coordinates: user.coordinates || null
+          });
+          
+          await warehouse.save();
+          warehouseCreated = warehouse;
+        }
+      } catch (warehouseError) {
+        console.error('Error creating warehouse for approved warehouse manager:', warehouseError);
+        // Don't fail the approval if warehouse creation fails, just log it
+      }
+    }
+
+    const response = { 
       message: `User ${user.name} has been approved successfully.`,
       user: {
         id: user._id,
@@ -597,7 +640,19 @@ router.put('/users/:id/approve', protect, async (req, res) => {
         role: user.role,
         approved: user.approved
       }
-    });
+    };
+
+    if (warehouseCreated) {
+      response.message += ` A warehouse has been automatically created.`;
+      response.warehouse = {
+        id: warehouseCreated._id,
+        location: warehouseCreated.location,
+        capacityLimit: warehouseCreated.capacityLimit,
+        currentCapacity: warehouseCreated.currentCapacity
+      };
+    }
+
+    res.json(response);
   } catch (err) {
     console.error('Error approving user:', err);
     res.status(500).json({ message: 'Server error approving user' });
@@ -1121,6 +1176,12 @@ router.put('/users/:id/location', protect, async (req, res) => {
 
     if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
       return res.status(400).json({ message: 'Invalid coordinates provided' });
+    }
+
+    // Ensure capacityLimit is set for warehouse managers
+    if (user.role === 'warehouse_manager' && !user.capacityLimit) {
+      console.log('Setting default capacityLimit for warehouse manager:', user.name);
+      user.capacityLimit = 1000; // Default capacity limit
     }
 
     // Update user coordinates and location info

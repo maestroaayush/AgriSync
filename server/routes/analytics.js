@@ -76,18 +76,34 @@ router.get('/warehouse-metrics', protect, async (req, res) => {
       }
     ]);
 
-    // Get warehouse capacity info
-    const warehouses = await Warehouse.find();
+    // Get warehouse capacity info with proper calculations
+    const warehouses = await Warehouse.find({ isManuallyAdded: true });
+    
+    // Calculate actual current usage for each warehouse
+    const warehouseMetrics = await Promise.all(warehouses.map(async (w) => {
+      // Get total quantity stored in this warehouse location
+      const inventoryTotal = await Inventory.aggregate([
+        { $match: { location: w.location } },
+        { $group: { _id: null, totalQuantity: { $sum: '$quantity' } } }
+      ]);
+      
+      const currentUsage = inventoryTotal.length > 0 ? inventoryTotal[0].totalQuantity : 0;
+      const utilizationRate = w.capacityLimit > 0 ? ((currentUsage / w.capacityLimit) * 100).toFixed(1) : 0;
+      
+      return {
+        name: w.name || w.location,
+        location: w.location,
+        capacityLimit: w.capacityLimit,
+        currentUsage: currentUsage,
+        availableSpace: w.capacityLimit - currentUsage,
+        utilizationRate: parseFloat(utilizationRate)
+      };
+    }));
     
     const metrics = {
       inventoryByLocation,
       deliveryMetrics,
-      warehouses: warehouses.map(w => ({
-        name: w.name,
-        location: w.location,
-        capacity: w.capacityLimit,
-        currentCapacity: w.currentCapacity
-      }))
+      warehouses: warehouseMetrics
     };
 
     res.json(metrics);
