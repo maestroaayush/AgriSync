@@ -107,17 +107,39 @@ router.post('/', protect, async (req, res) => {
     });
 
     // Notify all admins about the new delivery request
+    console.log('🔍 Finding admin users to notify...');
     const admins = await User.find({ role: 'admin' }).select('_id');
+    console.log('🔍 Found admins:', admins.length, 'admins');
+    console.log('🔍 Admin IDs:', admins.map(admin => admin._id));
+    
+    if (admins.length === 0) {
+      console.error('❌ No admin users found in database!');
+    }
     
     const requesterLabel = req.user.role === 'farmer' ? 'farmer' : 'vendor';
+    const notificationTitle = '📦 New Delivery Request';
+    const notificationMessage = `New delivery request from ${requesterLabel} ${req.user.name}: ${goodsDescription || itemName} (${quantity} ${unit || 'units'}) - Priority: ${urgency}. Please review and assign a transporter.`;
+    
+    console.log('📧 Preparing to send notifications to admins...');
+    console.log('📧 Notification title:', notificationTitle);
+    console.log('📧 Notification message:', notificationMessage);
+    
     for (const admin of admins) {
-      await NotificationService.general(
-        admin._id,
-        '📦 New Delivery Request',
-        `New delivery request from ${requesterLabel} ${req.user.name}: ${goodsDescription || itemName} (${quantity} ${unit || 'units'}) - Priority: ${urgency}. Please review and assign a transporter.`,
-        'info'
-      );
+      try {
+        console.log(`📧 Sending notification to admin: ${admin._id}`);
+        await NotificationService.general(
+          admin._id,
+          notificationTitle,
+          notificationMessage,
+          'info'
+        );
+        console.log(`✅ Notification sent successfully to admin: ${admin._id}`);
+      } catch (notificationError) {
+        console.error(`❌ Failed to send notification to admin ${admin._id}:`, notificationError);
+      }
     }
+    
+    console.log('📧 Finished sending notifications to all admins');
 
     res.status(201).json({ 
       message: 'Delivery request created successfully',
@@ -248,6 +270,37 @@ router.put('/:id/status', protect, async (req, res) => {
   try {
     const delivery = await Delivery.findById(req.params.id);
     if (!delivery) return res.status(404).json({ message: 'Delivery not found' });
+    
+    // EARLY VALIDATION: Fix warehouseLocation BEFORE any processing
+    console.log('🛡️ Early validation: Checking warehouseLocation before processing...');
+    if (delivery.warehouseLocation !== undefined && delivery.warehouseLocation !== null) {
+      console.log('🔍 Found warehouseLocation:', typeof delivery.warehouseLocation, delivery.warehouseLocation);
+      
+      try {
+        const mongoose = require('mongoose');
+        
+        if (typeof delivery.warehouseLocation === 'string') {
+          const trimmed = delivery.warehouseLocation.trim();
+          
+          if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+            console.log('⚠️ Early validation: Removing empty/invalid string warehouseLocation');
+            delivery.warehouseLocation = undefined;
+          } else if (!mongoose.Types.ObjectId.isValid(trimmed)) {
+            console.log('❌ Early validation: Invalid ObjectId string, removing:', trimmed);
+            delivery.warehouseLocation = undefined;
+          } else {
+            console.log('✅ Early validation: Converting valid ObjectId string');
+            delivery.warehouseLocation = new mongoose.Types.ObjectId(trimmed);
+          }
+        } else if (!mongoose.Types.ObjectId.isValid(delivery.warehouseLocation)) {
+          console.log('❌ Early validation: Invalid warehouseLocation, removing:', delivery.warehouseLocation);
+          delivery.warehouseLocation = undefined;
+        }
+      } catch (validationError) {
+        console.error('❌ Early validation error:', validationError.message);
+        delivery.warehouseLocation = undefined;
+      }
+    }
 
     // Validate essential delivery data
     if (!delivery.goodsDescription || !delivery.quantity || delivery.quantity <= 0) {
@@ -412,7 +465,6 @@ router.put('/:id/status', protect, async (req, res) => {
             }
             
             // Notify vendor about the delivery
-            const vendorId = delivery.vendor || delivery.requestedBy;
             if (vendorId) {
               await NotificationService.general(
                 vendorId,
@@ -629,6 +681,74 @@ router.put('/:id/status', protect, async (req, res) => {
           console.error('Failed to notify admins about inventory failure:', notifError);
         }
       }
+    }
+    
+    // Clean up warehouseLocation field if it's invalid (ENHANCED FIX)
+    try {
+      if (delivery.warehouseLocation !== undefined && delivery.warehouseLocation !== null) {
+        const mongoose = require('mongoose');
+        
+        console.log('🔍 Validating warehouseLocation:', typeof delivery.warehouseLocation, delivery.warehouseLocation);
+        
+        // Check if warehouseLocation is a string that needs conversion
+        if (typeof delivery.warehouseLocation === 'string') {
+          console.log('🔧 Converting string warehouseLocation to ObjectId:', delivery.warehouseLocation);
+          
+          // Trim whitespace and check if it's empty
+          const trimmedLocation = delivery.warehouseLocation.trim();
+          
+          if (trimmedLocation === '' || trimmedLocation === 'null' || trimmedLocation === 'undefined') {
+            console.log('⚠️ Empty or null string detected, removing warehouseLocation');
+            delivery.warehouseLocation = undefined;
+          } else if (mongoose.Types.ObjectId.isValid(trimmedLocation)) {
+            // Valid ObjectId string - convert to ObjectId
+            delivery.warehouseLocation = new mongoose.Types.ObjectId(trimmedLocation);
+            console.log('✅ Converted valid ObjectId string to ObjectId');
+          } else {
+            // Invalid ObjectId string - try to find the corresponding warehouse
+            console.log('🔍 Invalid ObjectId string, searching for warehouse by location:', trimmedLocation);
+            try {
+              const Warehouse = require('../models/Warehouse');
+              const warehouse = await Warehouse.findOne({ 
+                $or: [
+                  { location: { $regex: new RegExp(trimmedLocation, 'i') } },
+                  { name: { $regex: new RegExp(trimmedLocation, 'i') } }
+                ]
+              });
+              
+              if (warehouse) {
+                delivery.warehouseLocation = warehouse._id;
+                console.log('✅ Fixed warehouseLocation string to ObjectId:', warehouse._id);
+              } else {
+                // If no warehouse found, remove the invalid field
+                console.log('⚠️ No warehouse found for location, removing warehouseLocation:', trimmedLocation);
+                delivery.warehouseLocation = undefined;
+              }
+            } catch (warehouseError) {
+              console.warn('⚠️ Failed to resolve warehouseLocation, removing field:', warehouseError.message);
+              delivery.warehouseLocation = undefined;
+            }
+          }
+        } else if (delivery.warehouseLocation instanceof mongoose.Types.ObjectId) {
+          // Already a valid ObjectId - keep as is
+          console.log('✅ warehouseLocation is already a valid ObjectId');
+        } else if (!mongoose.Types.ObjectId.isValid(delivery.warehouseLocation)) {
+          // Not a string, not an ObjectId, and not valid - remove it
+          console.log('⚠️ Removing invalid warehouseLocation (invalid type):', typeof delivery.warehouseLocation, delivery.warehouseLocation);
+          delivery.warehouseLocation = undefined;
+        } else {
+          // Valid ObjectId as string or object - ensure it's an ObjectId instance
+          console.log('🔧 Ensuring warehouseLocation is ObjectId instance');
+          delivery.warehouseLocation = new mongoose.Types.ObjectId(delivery.warehouseLocation);
+        }
+      } else {
+        console.log('✅ warehouseLocation is null/undefined - no conversion needed');
+      }
+    } catch (warehouseLocationError) {
+      console.error('❌ Critical error in warehouseLocation validation:', warehouseLocationError);
+      // In case of any error, safely remove the field to prevent save failures
+      delivery.warehouseLocation = undefined;
+      console.log('🔧 Removed warehouseLocation due to validation error');
     }
     
     await delivery.save();

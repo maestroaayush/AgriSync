@@ -37,14 +37,58 @@ class OrderFulfillmentService {
       }
 
       // Find warehouse
-      const warehouse = await Warehouse.findOne({ location: warehouseLocation });
-      if (!warehouse) {
-        throw new Error(`Warehouse not found at location: ${warehouseLocation}`);
+      let warehouse;
+      let actualWarehouseLocation = warehouseLocation;
+      
+      if (warehouseLocation === 'Any Available Warehouse') {
+        // Find warehouse with sufficient inventory
+        const inventoryWithWarehouse = await Inventory.aggregate([
+          {
+            $match: {
+              itemName: { $regex: new RegExp(itemName, 'i') },
+              status: 'available',
+              quantity: { $gt: 0 }
+            }
+          },
+          {
+            $group: {
+              _id: '$location',
+              totalQuantity: { $sum: '$quantity' }
+            }
+          },
+          {
+            $match: {
+              totalQuantity: { $gte: quantity }
+            }
+          },
+          {
+            $sort: { totalQuantity: -1 }
+          },
+          {
+            $limit: 1
+          }
+        ]);
+
+        if (inventoryWithWarehouse.length === 0) {
+          throw new Error(`No warehouse has sufficient inventory for ${itemName}. Requested: ${quantity} ${unit}`);
+        }
+
+        actualWarehouseLocation = inventoryWithWarehouse[0]._id;
+        warehouse = await Warehouse.findOne({ location: actualWarehouseLocation });
+        
+        if (!warehouse) {
+          throw new Error(`Warehouse not found at location: ${actualWarehouseLocation}`);
+        }
+      } else {
+        warehouse = await Warehouse.findOne({ location: warehouseLocation });
+        if (!warehouse) {
+          throw new Error(`Warehouse not found at location: ${warehouseLocation}`);
+        }
       }
 
-      // Check available inventory
+      // Check available inventory at the selected warehouse
       const availableInventory = await Inventory.find({
-        location: warehouseLocation,
+        location: actualWarehouseLocation,
         itemName: { $regex: new RegExp(itemName, 'i') },
         status: 'available',
         quantity: { $gt: 0 }
@@ -53,7 +97,7 @@ class OrderFulfillmentService {
       const totalAvailable = availableInventory.reduce((sum, item) => sum + item.quantity, 0);
       
       if (totalAvailable < quantity) {
-        throw new Error(`Insufficient inventory. Available: ${totalAvailable} ${unit}, Requested: ${quantity} ${unit}`);
+        throw new Error(`Insufficient inventory at ${actualWarehouseLocation}. Available: ${totalAvailable} ${unit}, Requested: ${quantity} ${unit}`);
       }
 
       // Create order
@@ -63,7 +107,7 @@ class OrderFulfillmentService {
         quantity,
         unit,
         requestedPrice,
-        warehouseLocation,
+        warehouseLocation: actualWarehouseLocation,
         warehouse: warehouse._id,
         vendorLocation: vendorLocation || vendor.location,
         priority: priority || 'normal',

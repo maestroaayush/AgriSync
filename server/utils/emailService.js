@@ -38,25 +38,45 @@ const createTransporter = async () => {
         }
       });
     } else {
-      // Ethereal Email - Create a real test account
-      console.log('📧 Creating Ethereal Email test account...');
-      const testAccount = await nodemailer.createTestAccount();
-      
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-      
-      isTestAccount = true;
-      console.log('✅ Ethereal Email test account created:');
-      console.log(`   📧 Email: ${testAccount.user}`);
-      console.log(`   🔑 Password: ${testAccount.pass}`);
-      console.log(`   🌐 Inbox: https://ethereal.email`);
+      // Ethereal Email configuration
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // Use provided Ethereal credentials
+        console.log('📧 Using provided Ethereal Email credentials...');
+        transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
+          port: process.env.EMAIL_PORT || 587,
+          secure: process.env.EMAIL_SECURE === 'true',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        
+        isTestAccount = true;
+        console.log('✅ Using Ethereal Email account:');
+        console.log(`   📧 Email: ${process.env.EMAIL_USER}`);
+        console.log(`   🌐 Inbox: https://ethereal.email`);
+      } else {
+        // Create a new test account
+        console.log('📧 Creating Ethereal Email test account...');
+        const testAccount = await nodemailer.createTestAccount();
+        
+        transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass
+          }
+        });
+        
+        isTestAccount = true;
+        console.log('✅ Ethereal Email test account created:');
+        console.log(`   📧 Email: ${testAccount.user}`);
+        console.log(`   🔑 Password: ${testAccount.pass}`);
+        console.log(`   🌐 Inbox: https://ethereal.email`);
+      }
     }
     
     // Test the connection

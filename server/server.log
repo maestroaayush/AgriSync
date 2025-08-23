@@ -1,13 +1,15 @@
 nohup: ignoring input
-
-> server@1.0.0 start
-> node server.js
-
 🧪 Development mode: Rate limit reset endpoint available at /api/dev/reset-rate-limit
+🔗 Attempting to connect to MongoDB... (attempt 1/5)
 ✅ MongoDB connected successfully
 ✅ Audit log scheduled cleanup started (every 2 hours)
 ✅ Audit service initialized with automatic cleanup
 🚀 Server running on port 5000
 🔗 API Documentation: http://localhost:5000/api-docs
 💻 Environment: development
-Killed
+📧 Using provided Ethereal Email credentials...
+✅ Using Ethereal Email account:
+   📧 Email: louie.reichert@ethereal.email
+   🌐 Inbox: https://ethereal.email
+✅ Email service connection verified successfully
+OTP email sent successfully: <6c237689-c60f-4adf-c35d-80c85d896532@ethereal.email>

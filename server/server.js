@@ -308,33 +308,56 @@ const PORT = process.env.PORT || 5000;
 
 // MongoDB connection options
 const mongoOptions = {
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 30000, // Increased from 5000ms to 30000ms
   socketTimeoutMS: 45000,
+  connectTimeoutMS: 30000, // Added connection timeout
   maxPoolSize: 50,
+  retryWrites: true,
+  retryReads: true,
 };
 
-// Connect to MongoDB and start server
+// Connect to MongoDB and start server with retry logic
 async function startServer() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, mongoOptions);
-    console.log('✅ MongoDB connected successfully');
-    
-    // Start audit service scheduled cleanup
-    auditService.startScheduledCleanup();
-    console.log('✅ Audit service initialized with automatic cleanup');
-    
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🔗 API Documentation: http://localhost:${PORT}/api-docs`);
-      console.log(`💻 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
+  const maxRetries = 5;
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`🔗 Attempting to connect to MongoDB... (attempt ${retryCount + 1}/${maxRetries})`);
+      await mongoose.connect(process.env.MONGO_URI, mongoOptions);
+      console.log('✅ MongoDB connected successfully');
+      
+      // Start audit service scheduled cleanup
+      auditService.startScheduledCleanup();
+      console.log('✅ Audit service initialized with automatic cleanup');
+      
+      server.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🔗 API Documentation: http://localhost:${PORT}/api-docs`);
+        console.log(`💻 Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
 
-    // Graceful shutdown
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
+      // Graceful shutdown
+      process.on('SIGTERM', gracefulShutdown);
+      process.on('SIGINT', gracefulShutdown);
+      
+      // If we get here, connection was successful
+      break;
+      
+    } catch (err) {
+      retryCount++;
+      console.error(`❌ MongoDB connection error (attempt ${retryCount}/${maxRetries}):`, err.message);
+      
+      if (retryCount >= maxRetries) {
+        console.error('💥 Max retry attempts reached. Exiting...');
+        process.exit(1);
+      }
+      
+      // Wait before retrying (exponential backoff)
+      const waitTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
+      console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
   }
 }
 

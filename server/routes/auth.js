@@ -148,12 +148,34 @@ router.post('/register', async (req, res) => {
     const emailResult = await sendOTPEmail(user.email, user.name, otp);
     
     if (!emailResult.success) {
-      // If email sending fails, delete the user and return error
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({ 
-        message: 'Failed to send verification email. Please try again later.',
-        error: emailResult.error 
-      });
+      console.warn('⚠️ Email sending failed:', emailResult.error);
+      
+      // In development mode, allow registration without email verification
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧪 Development mode: Allowing registration without email verification');
+        
+        // Auto-verify the user in development
+        user.emailVerified = true;
+        user.emailVerificationToken = null;
+        user.emailVerificationExpires = null;
+        await user.save();
+        
+        return res.status(201).json({ 
+          message: 'Registration successful! Email verification skipped in development mode.',
+          userId: user._id,
+          requiresVerification: false,
+          emailSent: false,
+          emailSkipped: true,
+          autoVerified: true
+        });
+      } else {
+        // In production, email sending failure should prevent registration
+        await User.findByIdAndDelete(user._id);
+        return res.status(500).json({ 
+          message: 'Failed to send verification email. Please try again later.',
+          error: emailResult.error 
+        });
+      }
     }
       
     res.status(201).json({ 

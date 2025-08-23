@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Modal from "../../components/Modal";
+import io from "socket.io-client";
 import { 
   PieChart, 
   Pie, 
@@ -406,6 +407,32 @@ function VendorDashboard() {
     
     fetchInitialData();
     
+    // Set up Socket.IO connection for real-time updates
+    const socket = io('http://localhost:5000');
+    
+    // Listen for inventory updates
+    socket.on('inventory_updated', (data) => {
+      console.log('📦 Inventory update received:', data);
+      // Check if this update affects this vendor
+      if (data.userId === user?.id || data.userId === user?._id) {
+        console.log('🔄 Refreshing vendor inventory due to real-time update');
+        fetchInventory();
+      }
+    });
+    
+    // Listen for delivery completion events that might affect vendor inventory
+    socket.on('delivery_completed', (data) => {
+      console.log('🚚 Delivery completed event received:', data);
+      // Check if this delivery was for this vendor
+      if (data.delivery && (data.delivery.vendor === user?.id || data.delivery.vendor === user?._id || 
+          data.delivery.requestedBy === user?.id || data.delivery.requestedBy === user?._id)) {
+        console.log('🔄 Refreshing vendor data due to delivery completion');
+        fetchInventory();
+        fetchExpectedDeliveries();
+        fetchNotifications();
+      }
+    });
+    
     // Set up polling for real-time updates with longer intervals
     const notificationInterval = setInterval(() => {
       if (!abortController.signal.aborted) {
@@ -421,6 +448,7 @@ function VendorDashboard() {
     
     return () => {
       abortController.abort();
+      socket.disconnect();
       clearInterval(notificationInterval);
       clearInterval(deliveryInterval);
     };
@@ -450,8 +478,21 @@ function VendorDashboard() {
         
         alert('Delivery request submitted successfully! Admin will review and assign a transporter.');
       } else {
-        // Regular order
-        await axios.post("http://localhost:5000/api/orders", form, {
+        // Regular order - prepare data with required fields
+        const orderData = {
+          itemName: form.itemName,
+          quantity: parseInt(form.quantity),
+          unit: form.unit,
+          warehouseLocation: 'Any Available Warehouse', // Let the system find available warehouse
+          vendorLocation: user?.location || 'Market Location',
+          requestedPrice: 0, // Default price
+          priority: form.urgency || 'normal',
+          vendorNotes: form.notes || '',
+          qualityRequirements: '',
+          requestedDeliveryDate: null
+        };
+        
+        await axios.post("http://localhost:5000/api/orders", orderData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         alert('Order placed successfully!');
